@@ -10,43 +10,61 @@ namespace GravityExploration
         static void Main(string[] args)
         {
             string DataPath = Path.Combine(Directory.GetCurrentDirectory(), "Data.txt");
-            List<double> objects = new List<double>();
+            List<Strata> Units = new List<Strata>();
 
-            ReadFile(DataPath, ref objects);
+            List<string[]> _units = ReadFile(DataPath);
+            InitUnit(_units, ref Units);
 
+            foreach(Strata _unit in Units)
+            {
+                Console.WriteLine(_unit.Weight);
+            }
         }
 
-        static private void ReadFile(string path, ref List<double> list)
+        private static List<string[]> ReadFile(string path)
         {
+            List<string[]> input = new();
             using (StreamReader sr = new StreamReader(path))
             {
-
-
-
-                //foreach (var number in sr.ReadLine()!.Split(' '))
-                //{
-                //    list.Add(double.Parse(number));
-                //}
+                //string test = sr.ReadToEnd() ?? throw new Exception("Пустой файл");
+                //sr.BaseStream.Position = 0;
+                while (!sr.EndOfStream)
+                { 
+                    string? line = sr.ReadLine();
+                    input.Add(line!.Split(' '));
+                }
             };
+            return input;
+        }
+
+        private static void InitUnit(List<string[]> _units, ref List<Strata> list)
+        {
+            for (int i = 0; i < _units.Count; i++)
+            {
+                Strata unit = new Strata();
+                unit.Depth = double.Parse(_units[i][0]);
+                unit.Radius = double.Parse(_units[i][1]);
+                unit.Density = double.Parse(_units[i][2]);
+                unit.SetMass();
+                list.Add(unit);
+            }
         }
     }
 
     public class Strata
     {
-        public double Depth { get; private set; }      // Глубина залегания
-        public double Radius { get; private set; }     // Радиус шара
-        public double Density { get; private set; }    // Плотность шара
-        public double weight;
-
-        public double Weight
+        public double Depth { get; set; }      // Глубина залегания
+        public double Radius { get; set; }     // Радиус шара
+        public double Density { get; set; }    // Плотность шара
+        public double Weight                   // Избыточная масса шара
         {
             get { return weight; }
-            private set { weight = M(); }
         }
+        private double weight;
 
-        private double M()
+        public void SetMass()
         {
-            return (4 / 3) * PI * Pow(Radius, 3) * Density;
+            weight = (4 / 3) * PI * Pow(Radius, 3) * Density;
         }
     }
 }
