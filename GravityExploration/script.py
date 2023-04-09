@@ -9,9 +9,9 @@ fig.suptitle('Test')
 
 
 with open("output.txt", "r") as f:
-    nums = f.readline()[:-2]
-    H = f.readline()[:-2]
-    R = f.readline()[:-2]
+    nums = f.readline()[:-1]
+    H = f.readline()[:-1]
+    R = f.readline()[:-1]
     x = f.readline()[:-2].replace(',','.')
     y = f.readline()[:-2].replace(',','.')
 
@@ -36,7 +36,7 @@ yg1 = float(R) * np.sin(theta) - float(H)
 ax[0].plot(x, y)
 
 ax[1] = plt.gca()
-ax[1].axis("equal")
+#ax[1].axis("equal")
 
 ax[1].vlines(0, -float(H) * 2, 0, color = 'k', alpha=0.3)
 ax[1].hlines(0, x[0], x[-1], color = 'k', alpha=0.3)
