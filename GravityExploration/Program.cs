@@ -24,12 +24,23 @@ namespace GravityExploration
                 X.Add(i);
             }
 
-            foreach (Strata _unit in Units)
+            //foreach (Strata _unit in Units)
+            //{
+            //    foreach (double x in X)
+            //    {
+            //        Y.Add(GetAnomaly(x, _unit.Depth, _unit.Radius, _unit.Density, _unit.Weight));
+            //    }
+            //}
+
+            
+            foreach (double x in X)
             {
-                foreach (double x in X)
+                double res = 0;
+                foreach (Strata _unit in Units)
                 {
-                    Y.Add(GetAnomaly(x, _unit.Depth, _unit.Radius, _unit.Density, _unit.Weight));
+                    res += GetAnomaly(x, _unit.Depth, _unit.Radius, _unit.Density, _unit.Weight);
                 }
+                Y.Add(res);
             }
 
             foreach (double y in Y)
@@ -41,7 +52,7 @@ namespace GravityExploration
         private static List<string[]> ReadFile(string path)
         {
             List<string[]> input = new();
-            using (StreamReader sr = new StreamReader(path))
+            using (StreamReader sr = new(path))
             {
                 //string test = sr.ReadToEnd() ?? throw new Exception("Пустой файл");
                 //sr.BaseStream.Position = 0;
@@ -94,10 +105,11 @@ namespace GravityExploration
             {
                 sw.WriteLine(_units.Count);
 
-                foreach (var unit in _units)
+                foreach (string[] unit in _units)
                 {
-                    sw.WriteLine(unit[0]);
-                    sw.WriteLine(unit[1]);
+                    sw.Write(unit[0] + " ");
+                    sw.Write(unit[1] + " ");
+                    sw.WriteLine();
                 }
 
                 foreach (double x in X)
