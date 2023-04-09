@@ -49,6 +49,8 @@ namespace GravityExploration
                 list.Add(unit);
             }
         }
+
+
     }
 
     public class Strata
