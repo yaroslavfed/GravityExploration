@@ -31,7 +31,6 @@ namespace GravityExploration
             //        Y.Add(GetAnomaly(x, _unit.Depth, _unit.Radius, _unit.Density, _unit.Weight));
             //    }
             //}
-
             
             foreach (double x in X)
             {
