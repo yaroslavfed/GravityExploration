@@ -5,8 +5,19 @@ import numpy as np
 fig, ax = plt.subplots(nrows=2, ncols=1, sharex= True)
 fig.suptitle('Plots Stacked Vertically')
 
-x = np.linspace(-6, 6)
-y = pow(x, -2)
+#x = np.linspace(-6, 6)
+#y = pow(x, -2)
+
+y = []
+x = []
+
+with open("output.txt", "r") as f:
+    x = f.readline()[:-2].replace(',','.')
+    y = f.readline()[:-2].replace(',','.')
+
+x=list(map(float, x.split(' ')))
+y=list(map(float, y.split(' ')))
+
 
 xt1 = np.arange(-5, -4, 0.01)
 xt2 = np.arange(-2, -1, 0.01)

@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Numerics;
 using static System.Math;
 
 namespace GravityExploration
@@ -6,6 +8,8 @@ namespace GravityExploration
     internal class Program
     {
         public static readonly double G = 6.672e-8;
+        private static readonly List<double> X = new();
+        private static readonly List<double> Y = new();
 
         static void Main(string[] args)
         {
@@ -15,10 +19,23 @@ namespace GravityExploration
             List<string[]> _units = ReadFile(DataPath);
             InitUnit(_units, ref Units);
 
-            foreach(Strata _unit in Units)
+            for (int i = -150000; i <= 150000; i+=10000)
             {
-                Console.WriteLine(_unit.Weight);
+                X.Add(i);
             }
+
+            foreach (Strata _unit in Units)
+            {
+                foreach (double x in X)
+                {
+                    Y.Add(GetAnomaly(x, _unit.Depth, _unit.Radius, _unit.Density, _unit.Weight));
+                }
+            }
+
+            foreach (double y in Y)
+                Console.WriteLine(y);
+
+            DrawPlot();
         }
 
         private static List<string[]> ReadFile(string path)
@@ -50,7 +67,40 @@ namespace GravityExploration
             }
         }
 
+        private static double GetAnomaly(double x, double H, double R, double RO, double W)
+        {
+            double commonFactor = G * H * W;
+            //Console.WriteLine(commonFactor);
 
+            double result = commonFactor / (Pow(Sqrt(Pow(x, 2) + Pow(H, 2)), 3));
+
+            return result;
+        }
+
+        private static void DrawPlot()
+        {
+            IEnumerable<double>? result = X.Concat(Y);
+
+            using Process myProcess = new Process();
+            myProcess.StartInfo.FileName = "python";
+            myProcess.StartInfo.Arguments = @"script.py";
+            myProcess.StartInfo.UseShellExecute = false;
+            myProcess.StartInfo.RedirectStandardInput = true;
+            myProcess.StartInfo.RedirectStandardOutput = false;
+            myProcess.Start();
+
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "output.txt");
+            using (StreamWriter sw = new StreamWriter(outputPath))
+            {
+                foreach (double x in X)
+                    sw.Write(x + " ");
+                sw.WriteLine();
+
+                foreach (double y in Y)
+                    sw.Write(y + " ");
+                sw.WriteLine();
+            };
+        }
     }
 
     public class Strata
@@ -66,7 +116,7 @@ namespace GravityExploration
 
         public void SetMass()
         {
-            weight = (4 / 3) * PI * Pow(Radius, 3) * Density;
+            weight = (4.0 / 3.0) * PI * Pow(Radius, 3) * Density;
         }
     }
 }
