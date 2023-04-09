@@ -35,7 +35,7 @@ namespace GravityExploration
             foreach (double y in Y)
                 Console.WriteLine(y);
 
-            DrawPlot();
+            DrawPlot(_units);
         }
 
         private static List<string[]> ReadFile(string path)
@@ -77,7 +77,7 @@ namespace GravityExploration
             return result;
         }
 
-        private static void DrawPlot()
+        private static void DrawPlot(List<string[]> _units)
         {
             IEnumerable<double>? result = X.Concat(Y);
 
@@ -92,6 +92,14 @@ namespace GravityExploration
             string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "output.txt");
             using (StreamWriter sw = new StreamWriter(outputPath))
             {
+                sw.WriteLine(_units.Count);
+
+                foreach (var unit in _units)
+                {
+                    sw.WriteLine(unit[0]);
+                    sw.WriteLine(unit[1]);
+                }
+
                 foreach (double x in X)
                     sw.Write(x + " ");
                 sw.WriteLine();
