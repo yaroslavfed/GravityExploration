@@ -23,21 +23,13 @@ namespace GravityExploration
             {
                 X.Add(i);
             }
-
-            //foreach (Strata _unit in Units)
-            //{
-            //    foreach (double x in X)
-            //    {
-            //        Y.Add(GetAnomaly(x, _unit.Depth, _unit.Radius, _unit.Density, _unit.Weight));
-            //    }
-            //}
             
             foreach (double x in X)
             {
                 double res = 0;
                 foreach (Strata _unit in Units)
                 {
-                    res += GetAnomaly(x, _unit.Depth, _unit.Radius, _unit.Density, _unit.Weight);
+                    res += GetAnomaly(x, _unit.Depth, _unit.Shift, _unit.Weight);
                 }
                 Y.Add(res);
             }
@@ -72,17 +64,18 @@ namespace GravityExploration
                 unit.Depth = double.Parse(_units[i][0]);
                 unit.Radius = double.Parse(_units[i][1]);
                 unit.Density = double.Parse(_units[i][2]);
+                unit.Shift = double.Parse(_units[i][3]);
                 unit.SetMass();
                 list.Add(unit);
             }
         }
 
-        private static double GetAnomaly(double x, double H, double R, double RO, double W)
+        private static double GetAnomaly(double x, double H, double S, double W)
         {
             double commonFactor = G * H * W;
             //Console.WriteLine(commonFactor);
 
-            double result = commonFactor / (Pow(Sqrt(Pow(x, 2) + Pow(H, 2)), 3));
+            double result = commonFactor / (Pow(Sqrt(Pow(x - S, 2) + Pow(H, 2)), 3));
 
             return result;
         }
@@ -108,6 +101,7 @@ namespace GravityExploration
                 {
                     sw.Write(unit[0] + " ");
                     sw.Write(unit[1] + " ");
+                    sw.Write(unit[3] + " ");
                     sw.WriteLine();
                 }
 
@@ -127,6 +121,7 @@ namespace GravityExploration
         public double Depth { get; set; }      // Глубина залегания
         public double Radius { get; set; }     // Радиус шара
         public double Density { get; set; }    // Плотность шара
+        public double Shift { get; set; }      // Смещение от OY
         public double Weight                   // Избыточная масса шара
         {
             get { return weight; }

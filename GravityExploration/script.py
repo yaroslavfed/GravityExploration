@@ -24,7 +24,7 @@ for i in range(int(nums)):
     r = units[i][1]
     x1 = r * np.cos(theta)
     y1 = r * np.sin(theta)
-    ax[1].fill_between(x1, y1 - units[i][0])
+    ax[1].fill_between(x1 + units[i][2], y1 - units[i][0])
 
 #xt1 = np.arange(-5, -4, 0.01)
 #xt2 = np.arange(-2, -1, 0.01)
