@@ -7,7 +7,7 @@ namespace GravityExploration
     {
         public static readonly double G = 6.672e-8;
         private static readonly List<double> X = new();
-        private static readonly List<double> Y = new();
+        private static readonly List<double> Z = new();
 
         static void Main(string[] args)
         {
@@ -29,11 +29,11 @@ namespace GravityExploration
                 {
                     res += GetAnomaly(x, _unit.Depth, _unit.Shift, _unit.Weight);
                 }
-                Y.Add(res);
+                Z.Add(res);
             }
 
-            foreach (double y in Y)
-                Console.WriteLine(y);
+            foreach (double z in Z)
+                Console.WriteLine(z);
 
             DrawPlot(_units);
         }
@@ -80,7 +80,7 @@ namespace GravityExploration
 
         private static void DrawPlot(List<string[]> _units)
         {
-            IEnumerable<double>? result = X.Concat(Y);
+            IEnumerable<double>? result = X.Concat(Z);
 
             using Process myProcess = new Process();
             myProcess.StartInfo.FileName = "python";
@@ -107,8 +107,8 @@ namespace GravityExploration
                     sw.Write(x + " ");
                 sw.WriteLine();
 
-                foreach (double y in Y)
-                    sw.Write(y + " ");
+                foreach (double z in Z)
+                    sw.Write(z + " ");
                 sw.WriteLine();
             };
         }
