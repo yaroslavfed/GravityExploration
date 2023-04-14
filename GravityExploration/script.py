@@ -85,4 +85,5 @@ zgrid = np.array(res_arr)
 
 ax2.plot_surface(xgrid, ygrid, zgrid, cmap='jet')
 
+plt.subplots_adjust(wspace=0, hspace=0)
 plt.show()
