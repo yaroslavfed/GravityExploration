@@ -6,17 +6,19 @@ namespace GravityExploration
 {
     internal class DirectProblem
     {
-        public List<List<Strata>> Population = new();
-        public DirectProblem(List<List<Strata>> Population)
+        private List<Strata> Population = new();
+        private List<List<double>> Z = new();
+        public DirectProblem(List<Strata> Population, List<List<double>> Z)
         {
             this.Population = Population;
+            this.Z = Z;
         }
 
         public void Decision()
         {
             List<Piece> Pieces = new List<Piece>();
 
-            foreach (var unit in Population[Population.Count - 1])
+            foreach (var unit in Population)
                 SplitGrid(ref Pieces, unit.CentreZ, unit.StepZ, unit.CentreX, unit.StepX, unit.CentreY, unit.StepY, unit.Density);
 
             #region Output
@@ -29,43 +31,43 @@ namespace GravityExploration
             }
             #endregion Output
 
-            GetAnomalyMap(Pieces);
-            DrawPlot(Pieces, Population[Population.Count - 1]);
+            GetAnomalyMap(Pieces, Z);
+            DrawPlot(Pieces, Population, Z);
         }
 
         private void SplitGrid(ref List<Piece> Pieces, double zC, double zS, double xC, double xS, double yC, double yS, double RO)
         {
-            Console.WriteLine("{0} x0\t{1} x1", xC - xS, xC + xS);
-            Console.WriteLine("{0} y0\t{1} y1", yC - yS, yC + yS);
-            Console.WriteLine("{0} z0\t{1} z1", zC - zS, zC + zS);
+            Console.WriteLine("x: {0} -> {1}", xC - xS, xC + xS);
+            Console.WriteLine("y: {0} -> {1}", yC - yS, yC + yS);
+            Console.WriteLine("z: {0} -> {1}", zC - zS, zC + zS);
 
-            //double delta_x = Round(((xC + xS) - (xC - xS)), MidpointRounding.ToEven);
-            //double delta_y = Round(((yC + yS) - (yC - yS)), MidpointRounding.ToEven);
-            //double delta_z = Round(((zC + zS) - (zC - zS)), MidpointRounding.ToEven);
-            double delta_x = (xC + xS) - (xC - xS);
-            double delta_y = (yC + yS) - (yC - yS);
-            double delta_z = (zC + zS) - (zC - zS);
+            double delta_x = Abs((xC + xS) - (xC - xS));
+            double delta_y = Abs((yC + yS) - (yC - yS));
+            double delta_z = Abs((zC + zS) - (zC - zS));
 
             Console.WriteLine("{0} delta_x", delta_x);
             Console.WriteLine("{0} delta_y", delta_y);
             Console.WriteLine("{0} delta_z", delta_z);
 
             double h;
-            List<double> comparison = new();
-            comparison.Add(delta_z);
-            comparison.Add(delta_x);
-            comparison.Add(delta_y);
+            List<double> comparison = new()
+            {
+                delta_z,
+                delta_x,
+                delta_y
+            };
 
             if (comparison.Max() * 0.4 > comparison.Min())
                 h = comparison.Min();
             else
                 h = comparison.Max() * 0.4;
             Console.WriteLine("h: " + h);
+            Console.WriteLine();
 
             GetSplit(ref Pieces, h, delta_y/h, delta_x/h, delta_z/h, zC - zS, xC - xS, yC - yS, RO);
         }
 
-        public void GetSplit(ref List<Piece> Items, double h, double yk, double xk, double zk, double z0, double x0, double y0, double RO)
+        private void GetSplit(ref List<Piece> Items, double h, double yk, double xk, double zk, double z0, double x0, double y0, double RO)
         {
             double _z0 = z0;
             for (int i = 0; i < zk; i++)
@@ -96,7 +98,7 @@ namespace GravityExploration
             }
         }
 
-        private static void GetAnomalyMap(List<Piece> Pieces)
+        private static void GetAnomalyMap(List<Piece> Pieces, List<List<double>> Z)
         {
             double res = 0;
             foreach (double y in GeneralData.Y)
@@ -112,7 +114,7 @@ namespace GravityExploration
                     list.Add(res);
                     res = 0;
                 }
-                GeneralData.Z.Add(list);
+                Z.Add(list);
             }
         }
 
@@ -155,7 +157,7 @@ namespace GravityExploration
             return result;
         }
 
-        private static void DrawPlot(List<Piece> Pieces, List<Strata> Units)
+        private static void DrawPlot(List<Piece> Pieces, List<Strata> Units, List<List<double>> Z)
         {
 #if true
             using Process myProcess = new();
@@ -168,7 +170,7 @@ namespace GravityExploration
 #endif
 
             string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "outputUnder.txt");
-            using (StreamWriter sw = new StreamWriter(outputPath))
+            using (StreamWriter sw = new StreamWriter(outputPath, false))
             {
 #if false
                 sw.WriteLine(Pieces.Count);
@@ -208,7 +210,7 @@ namespace GravityExploration
 
                 sw.WriteLine(GeneralData.Y.Count);
 
-                foreach (var z in GeneralData.Z)
+                foreach (var z in Z)
                 {
                     foreach (var _z in z)
                     {
@@ -216,7 +218,6 @@ namespace GravityExploration
                     }
                     sw.WriteLine();
                 }
-                //sw.WriteLine();
             };
         }
     }
