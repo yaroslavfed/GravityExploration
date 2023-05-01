@@ -6,33 +6,43 @@ namespace GravityExploration
 {
     internal class DirectProblem
     {
-        private List<Strata> Population = new();
+        private (List<Strata>, List<List<double>>) Population = new();
+        private List<Strata> Generation = new();
         private List<List<double>> Z = new();
-        public DirectProblem(List<Strata> Population, List<List<double>> Z)
+        public DirectProblem((List<Strata>, List<List<double>>) Population)
         {
             this.Population = Population;
-            this.Z = Z;
+            this.Generation = Population.Item1;
+            this.Z = Population.Item2;
         }
 
         public void Decision()
         {
             List<Piece> Pieces = new List<Piece>();
 
-            foreach (var unit in Population)
+            foreach (var unit in Generation)
                 SplitGrid(ref Pieces, unit.CentreZ, unit.StepZ, unit.CentreX, unit.StepX, unit.CentreY, unit.StepY, unit.Density);
 
             #region Output
+            int p = 0;
+            foreach (var strata in Generation)
+            {
+                Console.WriteLine(String.Format("Stratas: {0}\t x: {1} +- {2}\n\t\t y: {3} +- {4}\n\t\t z: {5} +- {6}\n\t{7}", p, strata.CentreX, strata.StepX, strata.CentreY, strata.StepY, strata.CentreZ, strata.StepZ, strata.Density));
+                Console.WriteLine();
+                p++;
+            }
+
             int k = 0;
             foreach (var piece in Pieces)
             {
-                Console.WriteLine(String.Format("pieces:\t{0}\t x: {1} -> {2}\n\t\t z: {3} -> {4}\n\t\t y: {5} -> {6}\n\t{7}", k, piece.X_Start, piece.X_Stop, piece.Z_Start, piece.Z_Stop, piece.Y_Start, piece.Y_Stop, piece.Density));
+                Console.WriteLine(String.Format("pieces: {0}\t x: {1} -> {2}\n\t\t y: {3} -> {4}\n\t\t z: {5} -> {6}\n\t{7}", k, piece.X_Start, piece.X_Stop, piece.Y_Start, piece.Y_Stop, piece.Z_Start, piece.Z_Stop, piece.Density));
                 Console.WriteLine();
                 k++;
             }
             #endregion Output
 
             GetAnomalyMap(Pieces, Z);
-            DrawPlot(Pieces, Population, Z);
+            DrawPlot(Pieces, Generation, Z);
         }
 
         private void SplitGrid(ref List<Piece> Pieces, double zC, double zS, double xC, double xS, double yC, double yS, double RO)
