@@ -1,12 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace GravityExploration
+﻿namespace GravityExploration
 {
-    internal class Piece : Strata
+    internal class Piece
     {
+        public double Z_Start { get; set; }
+        public double Z_Stop { get; set; }
+        public double X_Start { get; set; }
+        public double X_Stop { get; set; }
+        public double Y_Start { get; set; }
+        public double Y_Stop { get; set; }
+        public double Density { get; set; }
     }
 }

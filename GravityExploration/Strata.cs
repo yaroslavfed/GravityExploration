@@ -4,30 +4,25 @@ namespace GravityExploration
 {
     public class Strata
     {
-        public double Z_Start { get; set; }     // Начальная координата Z
-        public double Z_Stop { get; set; }      // Конечная координата Z
-        public double X_Start { get; set; }     // Начальная координата X
-        public double X_Stop { get; set; }      // Конечная координата X
-        public double Y_Start { get; set; }     // Начальная координата Y
-        public double Y_Stop { get; set; }      // Конечная координата Y
-        public double Density { get; set; }     // Плотность
-        public double Weight { get; set; }      // Масса ( вычисляется отдельно )
+        public Strata(int i, List<string[]> _units)
+        {
+            CentreX = double.Parse(_units[i][0]);
+            StepX = double.Parse(_units[i][1]);
+            CentreY = double.Parse(_units[i][2]);
+            StepY = double.Parse(_units[i][3]);
+            CentreZ = double.Parse(_units[i][4]);
+            StepZ = double.Parse(_units[i][5]);
+            Density = double.Parse(_units[i][6]);
+        }
 
-        #region Comments
-        //public double Depth { get; set; }      // Глубина залегания
-        //public double Radius { get; set; }     // Радиус шара
-        //public double Shift { get; set; }      // Смещение от OY
+        public double CentreZ { get; private set; }     // Начальная координата Z
+        public double StepZ { get; private set; }      // Конечная координата Z
+        public double CentreX { get; private set; }     // Начальная координата X
+        public double StepX { get; private set; }      // Конечная координата X
+        public double CentreY { get; private set; }     // Начальная координата Y
+        public double StepY { get; private set; }      // Конечная координата Y
+        public double Density { get; private set; }     // Плотность
 
-        //public double Weight                    // Масса
-        //{
-        //    get { return weight; }
-        //}
-        //private double weight;
-
-        //public void SetMass()
-        //{
-        //    weight = (4.0 / 3.0) * PI * Pow(Radius, 3) * Density;   // Избыточная масса шара
-        //} 
-        #endregion Comments
+        public double Weight { get; private set; }      // Масса ( вычисляется отдельно )
     }
 }

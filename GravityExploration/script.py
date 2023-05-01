@@ -4,6 +4,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
 import matplotlib.pyplot as plt
 
 units = []
+res_arr = []
 
 with open("outputUnder.txt", "r") as f:
     nums = f.readline()[:-1]
@@ -11,10 +12,11 @@ with open("outputUnder.txt", "r") as f:
         units.append([float(j) for j in f.readline()[:-2].replace(',','.').split(' ')])
     xf = f.readline()[:-2].replace(',','.')
     yf = f.readline()[:-2].replace(',','.')
-    zf = f.readline()[:-2].replace(',','.')
+    ynums = f.readline()[:-1]
+    for i in range(int(ynums)):
+        res_arr.append([float(j) for j in f.readline()[:-2].replace(',','.').split(' ')])
 xf=list(map(float, xf.split(' ')))
 yf=list(map(float, yf.split(' ')))
-zf=list(map(float, zf.split(' ')))
 
 fig = plt.figure(figsize=(6, 9.5))
 
@@ -64,26 +66,13 @@ ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax2.set_zlabel('Z')
 
-x = [1, 2, 3, 4]
-y = [1, 2, 3]
-
-x_len = len(xf)
-y_len = len(yf)
-
-res_arr = []
-
-for i in range(y_len):
-    res_arr_in = []
-    for j in range(x_len):
-        res_arr_in.append(zf[i*x_len+j])
-    res_arr.append(res_arr_in)
-
 xgrid, ygrid = np.meshgrid(xf, yf)
 
-#zgrid = [[2, 4, 6, 1],[5, 8, 1, 2],[3, 4, 1, 5]]
 zgrid = np.array(res_arr)
 
 ax2.plot_surface(xgrid, ygrid, zgrid, cmap='jet')
+
+ax1.axis("equal")
 
 plt.subplots_adjust(wspace=0, hspace=0)
 plt.show()
