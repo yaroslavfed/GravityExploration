@@ -6,10 +6,10 @@ namespace GravityExploration
 {
     internal class DirectProblem
     {
-        private int number;
-        private (List<Strata>, List<List<double>>) Population = new();
-        private List<Strata> Generation = new();
-        private List<List<double>> Z = new();
+        private readonly int number;
+        private readonly (List<Strata>, List<List<double>>) Population = new();
+        private readonly List<Strata> Generation = new();
+        private readonly List<List<double>> Z = new();
 
         public DirectProblem(int number, (List<Strata>, List<List<double>>) Population)
         {
