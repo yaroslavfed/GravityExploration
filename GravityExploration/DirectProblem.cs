@@ -6,11 +6,14 @@ namespace GravityExploration
 {
     internal class DirectProblem
     {
+        private int number;
         private (List<Strata>, List<List<double>>) Population = new();
         private List<Strata> Generation = new();
         private List<List<double>> Z = new();
-        public DirectProblem((List<Strata>, List<List<double>>) Population)
+
+        public DirectProblem(int number, (List<Strata>, List<List<double>>) Population)
         {
+            this.number = number;
             this.Population = Population;
             this.Generation = Population.Item1;
             this.Z = Population.Item2;
@@ -42,7 +45,7 @@ namespace GravityExploration
             #endregion Output
 
             GetAnomalyMap(Pieces, Z);
-            DrawPlot(Pieces, Generation, Z);
+            AddToTxt(Pieces, Generation, Z);
         }
 
         private void SplitGrid(ref List<Piece> Pieces, double zC, double zS, double xC, double xS, double yC, double yS, double RO)
@@ -108,7 +111,7 @@ namespace GravityExploration
             }
         }
 
-        private static void GetAnomalyMap(List<Piece> Pieces, List<List<double>> Z)
+        private void GetAnomalyMap(List<Piece> Pieces, List<List<double>> Z)
         {
             double res = 0;
             foreach (double y in GeneralData.Y)
@@ -128,13 +131,13 @@ namespace GravityExploration
             }
         }
 
-        private static double GetAnomaly(double x, double y, Piece piece, double z = 0)
+        private double GetAnomaly(double x, double y, Piece piece, double z = 0)
         {
             double result = GeneralData.G * (piece.Density - GeneralData.SoilDensity) * IntegralCalculation(x, y, z, piece.X_Start, piece.X_Stop, piece.Y_Start, piece.Y_Stop, piece.Z_Start, piece.Z_Stop);
             return result;
         }
 
-        private static double IntegralCalculation(double xReceiver, double yReceiver, double zReceiver, double x0, double x1, double y0, double y1, double z0, double z1)
+        private double IntegralCalculation(double xReceiver, double yReceiver, double zReceiver, double x0, double x1, double y0, double y1, double z0, double z1)
         {
             double n = 1E+2;
             //Console.WriteLine(n);
@@ -167,21 +170,14 @@ namespace GravityExploration
             return result;
         }
 
-        private static void DrawPlot(List<Piece> Pieces, List<Strata> Units, List<List<double>> Z)
+        private void AddToTxt(List<Piece> Pieces, List<Strata> Units, List<List<double>> Z)
         {
-#if true
-            using Process myProcess = new();
-            myProcess.StartInfo.FileName = "python";
-            myProcess.StartInfo.Arguments = @"script.py";
-            myProcess.StartInfo.UseShellExecute = false;
-            myProcess.StartInfo.RedirectStandardInput = true;
-            myProcess.StartInfo.RedirectStandardOutput = false;
-            myProcess.Start(); 
-#endif
-
-            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "outputUnder.txt");
-            using (StreamWriter sw = new StreamWriter(outputPath, false))
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "output" + number + ".txt");
+            using (StreamWriter sw = new(outputPath, false))
             {
+                //sw.WriteLine(number);
+
+                // Вывод дробленной фигуры
 #if false
                 sw.WriteLine(Pieces.Count);
                 foreach (var unit in Pieces)
@@ -196,6 +192,7 @@ namespace GravityExploration
                 }
 #endif
 
+                // Вывод целой фигуры
 #if true
                 sw.WriteLine(Units.Count);
                 foreach (var unit in Units)
@@ -210,6 +207,7 @@ namespace GravityExploration
                 }
 #endif
 
+                // Запись в файл сетки аномалии
                 foreach (double x in GeneralData.X)
                     sw.Write(x + " ");
                 sw.WriteLine();
@@ -230,5 +228,7 @@ namespace GravityExploration
                 }
             };
         }
+
+
     }
 }

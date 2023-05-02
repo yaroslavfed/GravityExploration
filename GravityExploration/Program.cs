@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GravityExploration
 {
@@ -19,9 +21,10 @@ namespace GravityExploration
     {
         static void Main(string[] args)
         {
-            int objectsNums = 3;                                       // Количество объектов у особи
-            double xs = -5, xe = 5;                                    // Границы сетки по OX
-            double ys = -5, ye = 5;                                    // Границы сетки по OY
+            int objectsNums = 3;                                        // Количество объектов у особи
+            int individualsNums = 3;                                    // Количество особей
+            double xs = -5, xe = 5;                                     // Границы сетки по OX
+            double ys = -5, ye = 5;                                     // Границы сетки по OY
 
             List<(List<Strata>, List <List<double>>)> Population = new();      // Список особей (особь - набор объектов)
             List<string[]> _units;                                     // Задание параметров для объектов особи
@@ -44,20 +47,41 @@ namespace GravityExploration
             _units = ReadFile(DataPath);
             Population.Add(AddPopulation(_units, GeneralData.Z));
 
-            DirectProblem forward = new(Population[0]);
+            DirectProblem forward = new(-1 ,Population[0]);
             forward.Decision();
             Population.Clear();
 
             Thread.Sleep(2000);
 
             // Решение обратной задачи
-            List<List<double>> Z = new();
+            for (int i = 0; i < individualsNums; i++)
+            {
+                List<List<double>> Z = new();
+                _units = SetPrimaryGeneration(objectsNums, xs, xe, ys, ye);
+                Population.Add(AddPopulation(_units, Z));
 
-            _units = SetPrimaryGeneration(objectsNums, xs, xe, ys, ye);
-            Population.Add(AddPopulation(_units, Z));
-            
-            DirectProblem back = new(Population[0]);
-            back.Decision();
+                DirectProblem back = new(i, Population[i]);
+                back.Decision();
+
+                Thread.Sleep(2000);
+            }
+
+            Console.WriteLine("Введите номер особи от -1 до {0} (где -1 - это дано, а от 0 до {0} - особи первоначального поколения): ", Population.Count-1);
+            while (true)
+            {
+                string a = Console.ReadLine();
+                if (a == "exit")
+                {
+                    break;
+                }
+                else
+                {
+                    if (int.TryParse(a, out int result))
+                        DrawPlot(result);
+                    else
+                        Console.WriteLine("Некорректное значение");
+                }
+            }
         }
 
         private static List<string[]> ReadFile(string path)
@@ -108,16 +132,16 @@ namespace GravityExploration
                             continue;
                     }
                 }
-                Random rd = new Random();
+                Random rd = new();
                 arr[arr.Length - 1] = Convert.ToString(rd.Next(2000, 4000));
                 PrimaryGeneration.Add(arr);
             }
 
-            double RandomDoubleInRange(double minValue, double maxValue)
+            static double RandomDoubleInRange(double minValue, double maxValue)
             {
-                Random rand = new Random();
+                Random rand = new();
                 return minValue + rand.NextDouble() * (maxValue - minValue);
-            }
+            }   
 
             return PrimaryGeneration;
         }
@@ -131,6 +155,23 @@ namespace GravityExploration
                 Units.Add(unit);
             }
             return (Units, Result);
+        }
+
+        private static void DrawPlot(int number)
+        {
+            string outputNumberPath = Path.Combine(Directory.GetCurrentDirectory(), "output.txt");
+            using (StreamWriter sw = new(outputNumberPath, false))
+            {
+                sw.WriteLine(number);
+            }
+
+            using Process myProcess = new();
+            myProcess.StartInfo.FileName = "python";
+            myProcess.StartInfo.Arguments = @"script.py";
+            myProcess.StartInfo.UseShellExecute = false;
+            myProcess.StartInfo.RedirectStandardInput = true;
+            myProcess.StartInfo.RedirectStandardOutput = false;
+            myProcess.Start();
         }
     }
 }

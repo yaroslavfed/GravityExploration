@@ -6,7 +6,10 @@ import matplotlib.pyplot as plt
 units = []
 res_arr = []
 
-with open("outputUnder.txt", "r") as f:
+with open("output.txt", "r") as f:
+    number = f.readline()[:-1]
+
+with open("output" + number + ".txt", "r") as f:
     nums = f.readline()[:-1]
     for i in range(int(nums)):
         units.append([float(j) for j in f.readline()[:-2].replace(',','.').split(' ')])
@@ -74,5 +77,6 @@ ax2.plot_surface(xgrid, ygrid, zgrid, cmap='jet')
 
 ax1.axis("equal")
 
+plt.title('Graph ' + number)
 plt.subplots_adjust(wspace=0, hspace=0)
 plt.show()
