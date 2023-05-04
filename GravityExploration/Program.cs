@@ -14,7 +14,7 @@ namespace GravityExploration
         // Входные данные для обратной задачи (сетка датчиков и их показания)
         public static readonly List<double> X = new();
         public static readonly List<double> Y = new();
-        public static readonly List<List<double>> Z = new();
+        public static readonly List<List<double>> trueReadings = new();
     }
 
     internal class Program
@@ -26,8 +26,8 @@ namespace GravityExploration
             double xs = -5, xe = 5;                                     // Границы сетки по OX
             double ys = -5, ye = 5;                                     // Границы сетки по OY
 
-            List<(List<Strata>, List <List<double>>)> Population = new();      // Список особей (особь - набор объектов)
-            List<string[]> _units;                                     // Задание параметров для объектов особи
+            List<(List<Strata>, List <List<double>>)> Population = new();       // Список особей (особь - набор объектов)
+            List<string[]> _units;                                      // Задание параметров для объектов особи
 
             // Подготовка к решению обратной задачи (прямая задача)
             // Получение значений аномалии по заданным объектам
@@ -45,33 +45,55 @@ namespace GravityExploration
             string DataPath = Path.Combine(Directory.GetCurrentDirectory(), "Data.txt");
 
             _units = ReadFile(DataPath);
-            Population.Add(AddPopulation(_units, GeneralData.Z));
+            Population.Add(AddGeneration(_units, GeneralData.trueReadings));
 
             DirectProblem forward = new(-1 ,Population[0]);
             forward.Decision();
             Population.Clear();
 
-            Thread.Sleep(2000);
+            Thread.Sleep(1000);
 
             // Решение обратной задачи
+            List<(List<Strata>, List<List<double>>)>[] populationsOfIndividuals = new List<(List<Strata>, List<List<double>>)>[2];
+
+            // Генерация случайных особей (первоначальное поколение)
             for (int i = 0; i < individualsNums; i++)
             {
                 List<List<double>> Z = new();
                 _units = SetPrimaryGeneration(objectsNums, xs, xe, ys, ye);
-                Population.Add(AddPopulation(_units, Z));
+                Population.Add(AddGeneration(_units, Z));
 
                 DirectProblem back = new(i, Population[i]);
                 back.Decision();
 
-                Thread.Sleep(2000);
+                Thread.Sleep(1000);
             }
 
+            // Массив для получения новых особей
+            populationsOfIndividuals[0] = Population;
+
+            // Вывод нужной особи и удаление лишних файлов при выходе из программы
             Console.WriteLine("Введите номер особи от -1 до {0} (где -1 - это дано, а от 0 до {0} - особи первоначального поколения): ", Population.Count-1);
             while (true)
             {
-                string a = Console.ReadLine();
+                string? a = Console.ReadLine();
                 if (a == "exit")
                 {
+                    string catalog = Directory.GetCurrentDirectory();
+                    //string fileName = catalog + "output*";
+                    string fileName = "output*.txt";
+                    foreach (string findedFile in Directory.EnumerateFiles(catalog, fileName, SearchOption.AllDirectories))
+                    {
+                        try
+                        {
+                            File.Delete(findedFile);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("The deletion failed: {0}", e.Message);
+                            break;
+                        }
+                    }
                     break;
                 }
                 else
@@ -146,7 +168,7 @@ namespace GravityExploration
             return PrimaryGeneration;
         }
 
-        private static (List<Strata>, List<List<double>>) AddPopulation(List<string[]> _units, List<List<double>> Result)
+        private static (List<Strata>, List<List<double>>) AddGeneration(List<string[]> _units, List<List<double>> Result)
         {
             List<Strata> Units = new();
             for (int i = 0; i < _units.Count; i++)
