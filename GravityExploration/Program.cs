@@ -66,21 +66,33 @@ namespace GravityExploration
                 DirectProblem back = new(i, Population[i]);
                 back.Decision();
 
-                Thread.Sleep(1000);
+                //Thread.Sleep(1000);
             }
 
             // Массив для получения новых особей
             populationsOfIndividuals[0] = Population;
 
+            //double Eps = 1e-5;
+            //int MaxP = 10;
+            //double Fp_best = 1;
+            //int p = 0;
+
+            //while (true)
+            //{
+            //    if (Fp_best <= Eps || p >= MaxP)
+            //    {
+            //        break;
+            //    }
+            //}
+
             // Вывод нужной особи и удаление лишних файлов при выходе из программы
-            Console.WriteLine("Введите номер особи от -1 до {0} (где -1 - это дано, а от 0 до {0} - особи первоначального поколения): ", Population.Count-1);
+            Console.WriteLine("Введите номер особи от -1 до {0} (где -1 - это дано, а от 0 до {0} - особи первоначального поколения): ", populationsOfIndividuals[0].Count-1);
             while (true)
             {
                 string? a = Console.ReadLine();
                 if (a == "exit")
                 {
                     string catalog = Directory.GetCurrentDirectory();
-                    //string fileName = catalog + "output*";
                     string fileName = "output*.txt";
                     foreach (string findedFile in Directory.EnumerateFiles(catalog, fileName, SearchOption.AllDirectories))
                     {
@@ -137,7 +149,7 @@ namespace GravityExploration
                 string[] arr = new string[7];
                 for (int i = 0; i < arr.Length - 1; i++)
                 {
-                    double depth = rand.NextDouble() * -100;
+                    double depth = rand.NextDouble() * -50;
                     switch (i)
                     {
                         case 0:
