@@ -23,6 +23,7 @@ namespace GravityExploration
         {
             List<Piece> Pieces = new List<Piece>();
 
+            System.Console.WriteLine();
             foreach (var unit in Generation)
                 SplitGrid(ref Pieces, unit.CentreZ, unit.StepZ, unit.CentreX, unit.StepX, unit.CentreY, unit.StepY, unit.Density);
 
@@ -35,13 +36,13 @@ namespace GravityExploration
                 p++;
             }
 
-            int k = 0;
-            foreach (var piece in Pieces)
-            {
-                Console.WriteLine(String.Format("pieces: {0}\t x: {1} -> {2}\n\t\t y: {3} -> {4}\n\t\t z: {5} -> {6}\n\t{7}", k, piece.X_Start, piece.X_Stop, piece.Y_Start, piece.Y_Stop, piece.Z_Start, piece.Z_Stop, piece.Density));
-                Console.WriteLine();
-                k++;
-            }
+            // int k = 0;
+            // foreach (var piece in Pieces)
+            // {
+            //     Console.WriteLine(String.Format("pieces: {0}\t x: {1} -> {2}\n\t\t y: {3} -> {4}\n\t\t z: {5} -> {6}\n\t{7}", k, piece.X_Start, piece.X_Stop, piece.Y_Start, piece.Y_Stop, piece.Z_Start, piece.Z_Stop, piece.Density));
+            //     Console.WriteLine();
+            //     k++;
+            // }
             #endregion Output
 
             GetAnomalyMap(Pieces, Z);
@@ -58,9 +59,9 @@ namespace GravityExploration
             double delta_y = Abs((yC + yS) - (yC - yS));
             double delta_z = Abs((zC + zS) - (zC - zS));
 
-            Console.WriteLine("{0} delta_x", delta_x);
-            Console.WriteLine("{0} delta_y", delta_y);
-            Console.WriteLine("{0} delta_z", delta_z);
+            // Console.WriteLine("{0} delta_x", delta_x);
+            // Console.WriteLine("{0} delta_y", delta_y);
+            // Console.WriteLine("{0} delta_z", delta_z);
 
             double h;
             List<double> comparison = new()
@@ -123,7 +124,7 @@ namespace GravityExploration
                     {
                         res += GetAnomaly(x, y, piece);
                     }
-                    Console.WriteLine(String.Format("x: {0}\ty: {1}\tz: {2}", x, y, res));
+                    //Console.WriteLine(String.Format("x: {0}\ty: {1}\tz: {2}", x, y, res));
                     list.Add(res);
                     res = 0;
                 }

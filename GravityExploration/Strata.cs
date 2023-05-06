@@ -24,5 +24,31 @@ namespace GravityExploration
         public double Density { get; private set; }     // Плотность
 
         public double Weight { get; private set; }      // Масса ( вычисляется отдельно )
+
+        public List<double>? Params { get; private set; }
+        public void SetToList()
+        {
+            Params = new List<double>();
+            Params.Add(CentreX);
+            Params.Add(CentreY);
+            Params.Add(CentreZ);
+            Params.Add(StepX);
+            Params.Add(StepY);
+            Params.Add(StepZ);
+        }
+
+        public void GetFromList()
+        {
+            if (Params is not null)
+            {
+                CentreX = Params[0];
+                CentreY = Params[1];
+                CentreZ = Params[2];
+                StepX = Params[3];
+                StepY = Params[4];
+                StepZ = Params[5];
+                SetToList();
+            }
+        }
     }
 }
