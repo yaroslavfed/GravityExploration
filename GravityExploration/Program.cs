@@ -146,6 +146,32 @@ namespace GravityExploration
             } while (item1 == item2 || repeat);
         }
 
+        private static void CheckingForRepetition(ref int item1, ref int item2, int Count1, int Count2, ref List<Tuple<int, int>> pairs, ref bool repeat, bool extraCondition)
+        {
+            Random rand = new();
+            do
+            {
+                item1 = rand.Next(Count1);
+                item2 = rand.Next(Count2);
+
+                Tuple<int, int> _tuple = getTuple(in item1, in item2);
+                Tuple<int, int> _tupleback = getTuple(in item2, in item1);
+
+                if (!pairs.Contains(_tuple) && !pairs.Contains(_tupleback))
+                {
+                    repeat = false;
+                    pairs.Add(_tuple);
+                    pairs.Add(_tupleback);
+                }
+                else
+                {
+                    //System.Console.WriteLine("Повторение {0} или {1}", _tuple, _tupleback);
+                    repeat = true;
+                }
+
+            } while (repeat);
+        }
+
         private static List<(List<Strata>, List <List<double>>)> CrossingOver(List<(List<Strata>, List <List<double>>)> individuals)
         {
             List<(List<Strata>, List <List<double>>)> generation = new();
@@ -157,6 +183,7 @@ namespace GravityExploration
             int indCount = 3;
             List<Tuple<int, int>> indPairs = new();
             bool indRepeat = true;
+            //System.Console.WriteLine("Individuals count: {0}", indCount);
             for (int j = 0; j < indCount; j++)
             {      
                 int _item1 = 0, _item2 = 0;
@@ -168,31 +195,40 @@ namespace GravityExploration
 
                 List<Tuple<int, int>> objPairs = new();
                 bool objRepeat = true;
+                //System.Console.WriteLine("Objects count: {0}", objCount);
                 for (int i = 0; i < objCount; i++)
                 {
                     int _obj1 = 0, _obj2 = 0;
-                    CheckingForRepetition(ref _obj1, ref _obj2, individuals[_item1].Item1.Count, individuals[_item2].Item1.Count, ref objPairs, ref objRepeat);
-                    System.Console.WriteLine("Объект первый: {0}\tвторой: {1}", _item1, _item2);
+                    CheckingForRepetition(ref _obj1, ref _obj2, individuals[_item1].Item1.Count, individuals[_item2].Item1.Count, ref objPairs, ref objRepeat, true);
+                    System.Console.WriteLine("\tОбъект первый: {0}\tвторой: {1}", _obj1, _obj2);
 
                     Random rdParamsCount = new();
                     int paramsCount = rdParamsCount.Next(1, individuals[0].Item1[0].Params!.Count);
 
+                    List<int> randomIndexes = new();
+                    bool indexesRepeat = true;
+                    //System.Console.WriteLine("Params count: {0}", paramsCount);
                     for (int k = 0; k < paramsCount; k++)
                     {
-                        int _indexParam = rdParamsCount.Next(individuals[0].Item1[0].Params!.Count);
+                        int _indexParam = 0;
+                        do
+                        {
+                            _indexParam = rdParamsCount.Next(individuals[0].Item1[0].Params!.Count);
+                            if (!randomIndexes.Contains(_indexParam))
+                            {
+                                indexesRepeat = false;
+                                randomIndexes.Add(_indexParam);
+                            }
+                            else
+                            {
+                                indexesRepeat = true;
+                                System.Console.WriteLine("\t\tПовторение");
+                            }
+                        } while (indexesRepeat);
                         Swap(_indexParam, individuals[_item1].Item1[_obj1], individuals[_item2].Item1[_obj2]);
                     }
                 }
             }
-            
-            // List<Strata> individual1 = individuals[_item1].Item1;
-            // List<Strata> individual2 = individuals[_item2].Item1;
-
-            // List<List<double>> Z1 = new();
-            // generation.Add((individual1, Z1));
-
-            // List<List<double>> Z2 = new();
-            // generation.Add((individual2, Z2));
 
             foreach (var item in individuals)
             {
@@ -215,8 +251,8 @@ namespace GravityExploration
                 item1.Params[index] = item2.Params[index];
                 item2.Params[index] = temp;
 
-                System.Console.WriteLine("Index: {0}", index);
-                System.Console.WriteLine("Swap to: {0} from: {1}", item1.Params[index], item2.Params[index]);
+                System.Console.WriteLine("\t\tIndex: {0}", index);
+                System.Console.WriteLine("\t\t\tSwap to: {0} from: {1}", item1.Params[index], item2.Params[index]);
 
                 Init(item1);
                 Init(item2);

@@ -35,6 +35,7 @@ namespace GravityExploration
             Params.Add(StepX);
             Params.Add(StepY);
             Params.Add(StepZ);
+            Params.Add(Density);
         }
 
         public void GetFromList()
@@ -47,6 +48,7 @@ namespace GravityExploration
                 StepX = Params[3];
                 StepY = Params[4];
                 StepZ = Params[5];
+                Density = Params[6];
                 SetToList();
             }
         }
