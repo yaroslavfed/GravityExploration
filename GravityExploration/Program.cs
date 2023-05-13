@@ -51,7 +51,7 @@ namespace GravityExploration
             forward.Decision();
             Population.Clear();
 
-            Thread.Sleep(1000);
+            //Thread.Sleep(1000);
 
             // Решение обратной задачи
             // Массив особей для кроссинговера
@@ -114,7 +114,7 @@ namespace GravityExploration
             OutputGraphs(populationsOfIndividuals[1].Count-1);
         }
 
-        public static Tuple<int, int> getTuple(in int rd1, in int rd2)
+        public static Tuple<int, int> GetTuple(in int rd1, in int rd2)
         {
             var aTuple = Tuple.Create<int, int>(rd1, rd2);
             return aTuple;
@@ -128,8 +128,8 @@ namespace GravityExploration
                 item1 = rand.Next(Count1);
                 item2 = rand.Next(Count2);
 
-                Tuple<int, int> _tuple = getTuple(in item1, in item2);
-                Tuple<int, int> _tupleback = getTuple(in item2, in item1);
+                Tuple<int, int> _tuple = GetTuple(in item1, in item2);
+                Tuple<int, int> _tupleback = GetTuple(in item2, in item1);
 
                 if (!pairs.Contains(_tuple) && !pairs.Contains(_tupleback))
                 {
@@ -154,8 +154,8 @@ namespace GravityExploration
                 item1 = rand.Next(Count1);
                 item2 = rand.Next(Count2);
 
-                Tuple<int, int> _tuple = getTuple(in item1, in item2);
-                Tuple<int, int> _tupleback = getTuple(in item2, in item1);
+                Tuple<int, int> _tuple = GetTuple(in item1, in item2);
+                Tuple<int, int> _tupleback = GetTuple(in item2, in item1);
 
                 if (!pairs.Contains(_tuple) && !pairs.Contains(_tupleback))
                 {
@@ -206,11 +206,11 @@ namespace GravityExploration
                     int paramsCount = rdParamsCount.Next(1, individuals[0].Item1[0].Params!.Count);
 
                     List<int> randomIndexes = new();
-                    bool indexesRepeat = true;
+                    bool indexesRepeat;
                     //System.Console.WriteLine("Params count: {0}", paramsCount);
                     for (int k = 0; k < paramsCount; k++)
                     {
-                        int _indexParam = 0;
+                        int _indexParam;
                         do
                         {
                             _indexParam = rdParamsCount.Next(individuals[0].Item1[0].Params!.Count);
@@ -244,7 +244,7 @@ namespace GravityExploration
 
         private static void Swap(int index, Strata item1, Strata item2)
         {
-            double temp = 0;
+            double temp;
             if (item1.Params is not null && item2.Params is not null)
             {
                 temp = item1.Params[index];
@@ -258,10 +258,7 @@ namespace GravityExploration
                 Init(item2);
             }
 
-            void Init(Strata item)
-            {
-                item.GetFromList();
-            }
+            static void Init(Strata item) => item.GetFromList();
         }
 
         private static void OutputGraphs(int indCount)
@@ -315,7 +312,7 @@ namespace GravityExploration
         private static List<string[]> SetPrimaryGeneration(int num, double xs, double xe, double ys, double ye)
         {
             List<string[]> PrimaryGeneration = new();
-            Random rand = new Random();
+            Random rand = new();
 
             double[] borders = new double[4];
             borders[0] = Math.Abs(xs);

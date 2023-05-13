@@ -28,14 +28,16 @@ namespace GravityExploration
         public List<double>? Params { get; private set; }
         public void SetToList()
         {
-            Params = new List<double>();
-            Params.Add(CentreX);
-            Params.Add(CentreY);
-            Params.Add(CentreZ);
-            Params.Add(StepX);
-            Params.Add(StepY);
-            Params.Add(StepZ);
-            Params.Add(Density);
+            Params = new List<double>
+            {
+                CentreX,
+                CentreY,
+                CentreZ,
+                StepX,
+                StepY,
+                StepZ,
+                Density
+            };
         }
 
         public void GetFromList()

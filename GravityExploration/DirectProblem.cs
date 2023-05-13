@@ -21,7 +21,7 @@ namespace GravityExploration
 
         public void Decision()
         {
-            List<Piece> Pieces = new List<Piece>();
+            List<Piece> Pieces = new();
 
             System.Console.WriteLine();
             foreach (var unit in Generation)
