@@ -7,16 +7,18 @@ namespace GravityExploration
     internal class DirectProblem
     {
         private readonly int number;
-        private readonly (List<Strata>, List<List<double>>) Population = new();
+        private List<double> functional = new();
         private readonly List<Strata> Generation = new();
         private readonly List<List<double>> Z = new();
+        private readonly List<List<double>> trueRecords = new();
 
-        public DirectProblem(int number, (List<Strata>, List<List<double>>) Population)
+        public DirectProblem(int number, (List<Strata>, List<List<double>>, List<double>) Population, List<List<double>> trueRecords = null)
         {
             this.number = number;
-            this.Population = Population;
             this.Generation = Population.Item1;
             this.Z = Population.Item2;
+            this.functional = Population.Item3;
+            this.trueRecords = trueRecords;
         }
 
         public void Decision()
@@ -46,6 +48,7 @@ namespace GravityExploration
             #endregion Output
 
             GetAnomalyMap(Pieces, Z);
+            GetFunctional(trueRecords, Z, functional);
             AddToTxt(Pieces, Generation, Z);
         }
 
@@ -58,10 +61,6 @@ namespace GravityExploration
             double delta_x = Abs((xC + xS) - (xC - xS));
             double delta_y = Abs((yC + yS) - (yC - yS));
             double delta_z = Abs((zC + zS) - (zC - zS));
-
-            // Console.WriteLine("{0} delta_x", delta_x);
-            // Console.WriteLine("{0} delta_y", delta_y);
-            // Console.WriteLine("{0} delta_z", delta_z);
 
             double h;
             List<double> comparison = new()
@@ -112,6 +111,24 @@ namespace GravityExploration
             }
         }
 
+        private static void GetFunctional(List<List<double>> trueReadings, List<List<double>> localReadings, List<double> functional)
+        {
+            if (trueReadings is not null)
+            {
+                double result = 0;
+                for (int i = 0; i < localReadings.Count; i++)
+                {
+                    double sum = 0;
+                    for (int j = 0; j < localReadings[i].Count; j++)
+                    {
+                        sum += Math.Pow((trueReadings[i][j] - localReadings[i][j]), 2);
+                    }
+                    result += sum;
+                }
+                functional.Add(result);
+            }
+        }
+
         private void GetAnomalyMap(List<Piece> Pieces, List<List<double>> Z)
         {
             double res = 0;
@@ -124,7 +141,6 @@ namespace GravityExploration
                     {
                         res += GetAnomaly(x, y, piece);
                     }
-                    //Console.WriteLine(String.Format("x: {0}\ty: {1}\tz: {2}", x, y, res));
                     list.Add(res);
                     res = 0;
                 }

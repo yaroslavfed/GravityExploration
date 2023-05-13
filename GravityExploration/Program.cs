@@ -26,11 +26,11 @@ namespace GravityExploration
             double xs = -5, xe = 5;                                             // Границы сетки по OX
             double ys = -5, ye = 5;                                             // Границы сетки по OY
 
-            List<(List<Strata>, List <List<double>>)> Population = new();       // Список особей (особь - набор объектов)
+            List<(List<Strata>, List <List<double>>, List<double>)> Population = new();       // Список особей (особь - набор объектов)
             List<string[]> _units;                                              // Задание параметров для объектов особи
 
             // Подготовка к решению обратной задачи (прямая задача)
-            // Получение значений аномалии по заданным объектам
+            // Получение значений аномалии по ЗАРАНЕЕ СОЗДАНЫМ объектам
             #region Receivers
             for (double i = xs; i <= xe; i += 1)
             {
@@ -47,15 +47,13 @@ namespace GravityExploration
             _units = ReadFile(DataPath);
             Population.Add(AddGeneration(_units, GeneralData.trueReadings));
 
-            DirectProblem forward = new(-1 ,Population[0]);
+            DirectProblem forward = new(-1, Population[0]);
             forward.Decision();
             Population.Clear();
 
-            //Thread.Sleep(1000);
-
             // Решение обратной задачи
             // Массив особей для кроссинговера
-            List<(List<Strata>, List<List<double>>)>[] populationsOfIndividuals = new List<(List<Strata>, List<List<double>>)>[2];
+            List<(List<Strata>, List<List<double>>, List<double>)>[] populationsOfIndividuals = new List<(List<Strata>, List<List<double>>, List<double>)>[2];
 
             // Генерация случайных особей (первоначальное поколение)
             for (int i = 0; i < individualsNums; i++)
@@ -70,11 +68,17 @@ namespace GravityExploration
 
             // Получение решения для первоначальных особей
             int q = 0;
-            foreach(var pop in populationsOfIndividuals[0])
+            foreach (var pop in populationsOfIndividuals[0])
             {
-                DirectProblem back = new(q, pop);
+                DirectProblem back = new(q, pop, GeneralData.trueReadings);
                 back.Decision();
                 q++;
+
+                Console.Write("Функционал: ");
+                foreach (var item in pop.Item3)
+                {
+                    Console.WriteLine(item);
+                }
             }
 
             // Вывод нужной особи и удаление лишних файлов при выходе из программы
@@ -82,31 +86,37 @@ namespace GravityExploration
             OutputGraphs(populationsOfIndividuals[0].Count-1);
 
             // Условия для обратной задачи
-            double Eps = 1e-5;          // Точность
-            int MaxP = 10;              // Максимальное количество итераций
-            double Fp_best = 1;         // Лучшее значение
+            double Eps = 1e-8;          // Точность
+            int MaxP = 20;              // Максимальное количество итераций
+            double Fp_best = 0;         // Лучшее значение
             int p = 0;                  // Итерация
 
             // Решение обратной задачи
-            // while (true)
-            // {
-            //     if (Fp_best <= Eps || p >= MaxP)
-            //     {
-            //         break;
-            //     }
-            //     populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0]);
-            //     p++;
-            // }
+            while (true)
+            {
+                if (Fp_best <= Eps || p >= MaxP)
+                {
+                    break;
+                }
+                populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0]);
+                p++;
+            }
 
-            populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0]);
+            //populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0]);
 
             // Получение решения для полученных особей
             int k = 0;
             foreach(var pop in populationsOfIndividuals[1])
             {
-                DirectProblem back = new(k, pop);
+                DirectProblem back = new(k, pop, GeneralData.trueReadings);
                 back.Decision();
                 k++;
+
+                Console.Write("Функционал: ");
+                foreach (var item in pop.Item3)
+                {
+                    Console.WriteLine(item);
+                }
             }
 
             // Вывод нужной особи и удаление лишних файлов при выходе из программы
@@ -114,7 +124,7 @@ namespace GravityExploration
             OutputGraphs(populationsOfIndividuals[1].Count-1);
         }
 
-        public static Tuple<int, int> GetTuple(in int rd1, in int rd2)
+        private static Tuple<int, int> GetTuple(in int rd1, in int rd2)
         {
             var aTuple = Tuple.Create<int, int>(rd1, rd2);
             return aTuple;
@@ -172,9 +182,9 @@ namespace GravityExploration
             } while (repeat);
         }
 
-        private static List<(List<Strata>, List <List<double>>)> CrossingOver(List<(List<Strata>, List <List<double>>)> individuals)
+        private static List<(List<Strata>,List <List<double>>, List<double>)> CrossingOver(List<(List<Strata>, List<List<double>>, List<double>)> individuals)
         {
-            List<(List<Strata>, List <List<double>>)> generation = new();
+            List<(List<Strata>, List <List<double>>, List<double>)> generation = new();
 
             //Random rdIndCount = new();              // Рандом для получения количества особей для замен
             //Random rdIndividual = new();            // Рандом для выбора случайной особи
@@ -183,7 +193,6 @@ namespace GravityExploration
             int indCount = 3;
             List<Tuple<int, int>> indPairs = new();
             bool indRepeat = true;
-            //System.Console.WriteLine("Individuals count: {0}", indCount);
             for (int j = 0; j < indCount; j++)
             {      
                 int _item1 = 0, _item2 = 0;
@@ -232,11 +241,12 @@ namespace GravityExploration
 
             foreach (var item in individuals)
             {
+                List<double> functional = new();
                 List<List<double>> Z = new();
                 List<Strata> list = new();
                 foreach (var unit in item.Item1)
                     list.Add(unit);
-                generation.Add((list, Z));
+                generation.Add((list, Z, functional));
             }
 
             return generation;
@@ -357,16 +367,19 @@ namespace GravityExploration
             return PrimaryGeneration;
         }
 
-        private static (List<Strata>, List<List<double>>) AddGeneration(List<string[]> _units, List<List<double>> Result)
+        private static (List<Strata>, List<List<double>>, List<double>) AddGeneration(List<string[]> _units, List<List<double>> Result)
         {
             List<Strata> Units = new();
+            List<double> functional = new();
+
             for (int i = 0; i < _units.Count; i++)
             {
                 Strata unit = new(i, _units);
                 unit.SetToList();
                 Units.Add(unit);
             }
-            return (Units, Result);
+
+            return (Units, Result, functional);
         }
 
         private static void DrawPlot(int number)
