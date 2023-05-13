@@ -21,10 +21,17 @@ namespace GravityExploration
     {
         static void Main(string[] args)
         {
-            int objectsNums = 3;                                                // Количество объектов у особи
-            int individualsNums = 3;                                            // Количество особей
-            double xs = -5, xe = 5;                                             // Границы сетки по OX
-            double ys = -5, ye = 5;                                             // Границы сетки по OY
+            // Входные данные
+            int objectsNums = 3;                        // Количество объектов у особи
+            int individualsNums = 3;                    // Количество особей
+            double xs = -3, xe = 3;                   // Границы сетки по OX
+            double ys = -3, ye = 3;                   // Границы сетки по OY
+
+            // Условия для обратной задачи
+            double Eps = 1e-8;                          // Точность
+            int MaxP = 100;                              // Максимальное количество итераций
+            double Fp_best = 1;                         // Лучшее значение
+            int p = 0;                                  // Итерация
 
             List<(List<Strata>, List <List<double>>, List<double>)> Population = new();       // Список особей (особь - набор объектов)
             List<string[]> _units;                                              // Задание параметров для объектов особи
@@ -85,43 +92,86 @@ namespace GravityExploration
             System.Console.WriteLine("Решение первоначальное");
             OutputGraphs(populationsOfIndividuals[0].Count-1);
 
-            // Условия для обратной задачи
-            double Eps = 1e-8;          // Точность
-            int MaxP = 20;              // Максимальное количество итераций
-            double Fp_best = 0;         // Лучшее значение
-            int p = 0;                  // Итерация
-
             // Решение обратной задачи
             while (true)
             {
                 if (Fp_best <= Eps || p >= MaxP)
                 {
+                    if(Fp_best <= Eps)
+                        Console.WriteLine("Достигнута искомая точность");
+                    if (p >= MaxP)
+                        Console.WriteLine("Достигнут предел поколений");
                     break;
                 }
+
+                DeleteFiles();
+
                 populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0]);
-                p++;
-            }
 
-            //populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0]);
-
-            // Получение решения для полученных особей
-            int k = 0;
-            foreach(var pop in populationsOfIndividuals[1])
-            {
-                DirectProblem back = new(k, pop, GeneralData.trueReadings);
-                back.Decision();
-                k++;
-
-                Console.Write("Функционал: ");
-                foreach (var item in pop.Item3)
+                // Получение решения для полученных особей
+                int k = 0;
+                foreach (var pop in populationsOfIndividuals[1])
                 {
-                    Console.WriteLine(item);
+                    DirectProblem back = new(k, pop, GeneralData.trueReadings);
+                    back.Decision();
+                    k++;
+
+                    Console.Write("Функционал особи: ");
+                    foreach (var item in pop.Item3)
+                    {
+                        Console.WriteLine(item);
+                    }
                 }
+
+                List<double> functionals = new();
+                foreach (var ind in populationsOfIndividuals[1])
+                    functionals.Add(ind.Item3.First());
+
+                Console.Write("Функционалы поколения: ");
+                foreach (var func in functionals)
+                    Console.Write(func + " ");
+                Console.WriteLine();
+
+                Fp_best = functionals.Min();
+                Console.WriteLine("Лучшая особь {0} с функционалом {1}\n", functionals.IndexOf(Fp_best), Fp_best);
+
+                populationsOfIndividuals[0] = populationsOfIndividuals[1];
+                //populationsOfIndividuals[1].Clear();
+
+                // Вывод нужной особи и удаление лишних файлов при выходе из программы
+                //System.Console.WriteLine("Решение после свапа");
+                //OutputGraphs(populationsOfIndividuals[1].Count - 1);
+
+                p++;
+
+                Thread.Sleep(3000);
+                functionals.Clear();
             }
 
             // Вывод нужной особи и удаление лишних файлов при выходе из программы
-            System.Console.WriteLine("Решение после свапа");
-            OutputGraphs(populationsOfIndividuals[1].Count-1);
+            System.Console.WriteLine("\nИтоговые фигуры");
+            OutputGraphs(populationsOfIndividuals[0].Count - 1);
+
+            //populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0]);
+
+            //// Получение решения для полученных особей
+            //int k = 0;
+            //foreach(var pop in populationsOfIndividuals[1])
+            //{
+            //    DirectProblem back = new(k, pop, GeneralData.trueReadings);
+            //    back.Decision();
+            //    k++;
+
+            //    Console.Write("Функционал: ");
+            //    foreach (var item in pop.Item3)
+            //    {
+            //        Console.WriteLine(item);
+            //    }
+            //}
+
+            //// Вывод нужной особи и удаление лишних файлов при выходе из программы
+            //System.Console.WriteLine("Решение после свапа");
+            //OutputGraphs(populationsOfIndividuals[1].Count-1);
         }
 
         private static Tuple<int, int> GetTuple(in int rd1, in int rd2)
@@ -273,34 +323,36 @@ namespace GravityExploration
 
         private static void OutputGraphs(int indCount)
         {
-            Console.WriteLine("Введите номер особи от -1 до {0} (где -1 - это дано, а от 0 до {0} - особи первоначального поколения): ", indCount);
+            Console.WriteLine("Введите номер особи от -1 до {0} (где -1 - это дано, а от 0 до {0} - особи текущего поколения): ", indCount);
             while (true)
             {
                 string? a = Console.ReadLine();
-                if (a == "exit")
-                {
-                    string catalog = Directory.GetCurrentDirectory();
-                    string fileName = "output*.txt";
-                    foreach (string findedFile in Directory.EnumerateFiles(catalog, fileName, SearchOption.AllDirectories))
-                    {
-                        try
-                        {
-                            File.Delete(findedFile);
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine("The deletion failed: {0}", e.Message);
-                            break;
-                        }
-                    }
-                    break;
-                }
-                else
+                if (a != "exit")
                 {
                     if (int.TryParse(a, out int result))
                         DrawPlot(result);
                     else
                         Console.WriteLine("Некорректное значение");
+                }
+                else
+                    break;
+            }
+        }
+
+        private static void DeleteFiles()
+        {
+            string catalog = Directory.GetCurrentDirectory();
+            string fileName = "output*.txt";
+            foreach (string findedFile in Directory.EnumerateFiles(catalog, fileName, SearchOption.AllDirectories))
+            {
+                try
+                {
+                    File.Delete(findedFile);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("The deletion failed: {0}", e.Message);
+                    break;
                 }
             }
         }

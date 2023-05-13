@@ -117,14 +117,8 @@ namespace GravityExploration
             {
                 double result = 0;
                 for (int i = 0; i < localReadings.Count; i++)
-                {
-                    double sum = 0;
                     for (int j = 0; j < localReadings[i].Count; j++)
-                    {
-                        sum += Math.Pow((trueReadings[i][j] - localReadings[i][j]), 2);
-                    }
-                    result += sum;
-                }
+                        result += Math.Pow((trueReadings[i][j] - localReadings[i][j]), 2);
                 functional.Add(result);
             }
         }
