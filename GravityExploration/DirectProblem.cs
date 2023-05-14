@@ -80,7 +80,7 @@ namespace GravityExploration
             GetSplit(ref Pieces, h, delta_y/h, delta_x/h, delta_z/h, zC - zS, xC - xS, yC - yS, RO);
         }
 
-        private void GetSplit(ref List<Piece> Items, double h, double yk, double xk, double zk, double z0, double x0, double y0, double RO)
+        private static void GetSplit(ref List<Piece> Items, double h, double yk, double xk, double zk, double z0, double x0, double y0, double RO)
         {
             double _z0 = z0;
             for (int i = 0; i < zk; i++)

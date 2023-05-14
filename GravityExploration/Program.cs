@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.Intrinsics.Arm;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GravityExploration
@@ -24,17 +25,19 @@ namespace GravityExploration
             // Входные данные
             int objectsNums = 3;                        // Количество объектов у особи
             int individualsNums = 3;                    // Количество особей
-            double xs = -3, xe = 3;                   // Границы сетки по OX
-            double ys = -3, ye = 3;                   // Границы сетки по OY
+            double xs = -5, xe = 5;                     // Границы сетки по OX
+            double ys = -5, ye = 5;                     // Границы сетки по OY
 
             // Условия для обратной задачи
             double Eps = 1e-8;                          // Точность
-            int MaxP = 100;                              // Максимальное количество итераций
+            int MaxP = 100;                             // Максимальное количество итераций
             double Fp_best = 1;                         // Лучшее значение
             int p = 0;                                  // Итерация
 
             List<(List<Strata>, List <List<double>>, List<double>)> Population = new();       // Список особей (особь - набор объектов)
             List<string[]> _units;                                              // Задание параметров для объектов особи
+            List<double> weights = new();
+            List<double> reproduction;
 
             // Подготовка к решению обратной задачи (прямая задача)
             // Получение значений аномалии по ЗАРАНЕЕ СОЗДАНЫМ объектам
@@ -74,19 +77,7 @@ namespace GravityExploration
             populationsOfIndividuals[0] = Population;
 
             // Получение решения для первоначальных особей
-            int q = 0;
-            foreach (var pop in populationsOfIndividuals[0])
-            {
-                DirectProblem back = new(q, pop, GeneralData.trueReadings);
-                back.Decision();
-                q++;
-
-                Console.Write("Функционал: ");
-                foreach (var item in pop.Item3)
-                {
-                    Console.WriteLine(item);
-                }
-            }
+            reproduction = Solution(0, ref populationsOfIndividuals, weights, out Fp_best);
 
             // Вывод нужной особи и удаление лишних файлов при выходе из программы
             System.Console.WriteLine("Решение первоначальное");
@@ -106,34 +97,10 @@ namespace GravityExploration
 
                 DeleteFiles();
 
-                populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0]);
+                populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0], reproduction);
 
                 // Получение решения для полученных особей
-                int k = 0;
-                foreach (var pop in populationsOfIndividuals[1])
-                {
-                    DirectProblem back = new(k, pop, GeneralData.trueReadings);
-                    back.Decision();
-                    k++;
-
-                    Console.Write("Функционал особи: ");
-                    foreach (var item in pop.Item3)
-                    {
-                        Console.WriteLine(item);
-                    }
-                }
-
-                List<double> functionals = new();
-                foreach (var ind in populationsOfIndividuals[1])
-                    functionals.Add(ind.Item3.First());
-
-                Console.Write("Функционалы поколения: ");
-                foreach (var func in functionals)
-                    Console.Write(func + " ");
-                Console.WriteLine();
-
-                Fp_best = functionals.Min();
-                Console.WriteLine("Лучшая особь {0} с функционалом {1}\n", functionals.IndexOf(Fp_best), Fp_best);
+                reproduction = Solution(1, ref populationsOfIndividuals, weights, out Fp_best);
 
                 populationsOfIndividuals[0] = populationsOfIndividuals[1];
                 //populationsOfIndividuals[1].Clear();
@@ -144,14 +111,14 @@ namespace GravityExploration
 
                 p++;
 
-                Thread.Sleep(3000);
-                functionals.Clear();
+                //Console.Read();
             }
 
             // Вывод нужной особи и удаление лишних файлов при выходе из программы
             System.Console.WriteLine("\nИтоговые фигуры");
             OutputGraphs(populationsOfIndividuals[0].Count - 1);
 
+            #region Comments
             //populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0]);
 
             //// Получение решения для полученных особей
@@ -172,12 +139,133 @@ namespace GravityExploration
             //// Вывод нужной особи и удаление лишних файлов при выходе из программы
             //System.Console.WriteLine("Решение после свапа");
             //OutputGraphs(populationsOfIndividuals[1].Count-1);
+            #endregion
+        }
+
+        private static List<double> Solution(int i, ref List<(List<Strata>, List<List<double>>, List<double>)>[] populationsOfIndividuals, List<double> weights, out double Fp_best)
+        {
+            int q = 0;
+            foreach (var pop in populationsOfIndividuals[i])
+            {
+                DirectProblem back = new(q, pop, GeneralData.trueReadings);
+                back.Decision();
+                weights.Add(pop.Item3.First());
+                q++;
+
+                Console.Write("Функционал: ");
+                Console.WriteLine(pop.Item3.First());
+            }
+
+            List<double> reproduction = GetReproduction(weights);
+
+            Console.Write("Функционалы поколения: ");
+            foreach (var func in weights)
+                Console.Write(func + " ");
+            Console.WriteLine();
+
+            Fp_best = weights.Min();
+            Console.WriteLine("Лучшая особь {0} с функционалом {1}\n", weights.IndexOf(Fp_best), Fp_best);
+
+            weights.Clear();
+
+            return reproduction;
+        }
+
+        private static List<double> GetReproduction(List<double> weights)
+        {
+            double functionalitySum = 0;
+            List<double> temp = new();
+            List<double> reproduction = new() { 0 };
+
+            foreach (var item in weights)
+            {
+                functionalitySum += item;
+            }
+            foreach (var item in weights)
+            {
+                temp.Add(functionalitySum / item);
+            }
+
+            functionalitySum = 0;
+            foreach (var item in temp)
+            {
+                functionalitySum += item;
+            }
+            foreach (var item in temp)
+            {
+                reproduction.Add(item / functionalitySum);
+            }
+
+            Console.WriteLine("\nВерятность выбора");
+            foreach (var item in reproduction)
+                Console.Write(item + " ");
+            Console.WriteLine();
+
+            for (int i = 1; i < reproduction.Count; i++)
+                reproduction[i] += reproduction[i - 1];
+
+            Console.WriteLine("\nПрямая 0 -> 1");
+            foreach (var item in reproduction)
+                Console.Write(item + " ");
+            Console.WriteLine();
+            Console.WriteLine();
+
+            return reproduction;
         }
 
         private static Tuple<int, int> GetTuple(in int rd1, in int rd2)
         {
             var aTuple = Tuple.Create<int, int>(rd1, rd2);
             return aTuple;
+        }
+
+        private static void CheckingForRepetition(ref int item1, ref int item2, int Count, ref List<Tuple<int, int>> pairs, ref bool repeat, in List<double> reproduction)
+        {
+            Random rand = new();
+            do
+            {
+                item1 = randI(Count, in reproduction);
+                item2 = randI(Count, in reproduction);
+
+                Tuple<int, int> _tuple = GetTuple(in item1, in item2);
+                Tuple<int, int> _tupleback = GetTuple(in item2, in item1);
+
+                if (!pairs.Contains(_tuple) && !pairs.Contains(_tupleback))
+                {
+                    repeat = false;
+                    pairs.Add(_tuple);
+                    pairs.Add(_tupleback);
+                }
+                else
+                {
+                    //Console.WriteLine("Повторение особей");
+                    repeat = true;
+                }
+
+            } while (item1 == item2 || repeat);
+
+            int randI(int count, in List<double> Reproduction)
+            {
+                double rdIndexItem = rand.NextDouble();
+                //Console.WriteLine("Тык: " + rdIndexItem);
+                int rdI = GetItemIndex(count, rdIndexItem, in Reproduction);
+                return rdI;
+            }
+        }
+
+        public static int GetItemIndex(int count, double rdIndexItem, in List<double> Reproduction)
+        {
+            int index = -1;
+
+            for (int i = 0; i < count; i++)
+            {
+                if (rdIndexItem >= Reproduction[i] && rdIndexItem < Reproduction[i + 1])
+                {
+                    index = i;
+                }
+            }
+
+            return index;
         }
 
         private static void CheckingForRepetition(ref int item1, ref int item2, int Count1, int Count2, ref List<Tuple<int, int>> pairs, ref bool repeat)
@@ -199,40 +287,13 @@ namespace GravityExploration
                 }
                 else
                 {
-                    //System.Console.WriteLine("Повторение {0} или {1}", _tuple, _tupleback);
-                    repeat = true;
-                }
-
-            } while (item1 == item2 || repeat);
-        }
-
-        private static void CheckingForRepetition(ref int item1, ref int item2, int Count1, int Count2, ref List<Tuple<int, int>> pairs, ref bool repeat, bool extraCondition)
-        {
-            Random rand = new();
-            do
-            {
-                item1 = rand.Next(Count1);
-                item2 = rand.Next(Count2);
-
-                Tuple<int, int> _tuple = GetTuple(in item1, in item2);
-                Tuple<int, int> _tupleback = GetTuple(in item2, in item1);
-
-                if (!pairs.Contains(_tuple) && !pairs.Contains(_tupleback))
-                {
-                    repeat = false;
-                    pairs.Add(_tuple);
-                    pairs.Add(_tupleback);
-                }
-                else
-                {
-                    //System.Console.WriteLine("Повторение {0} или {1}", _tuple, _tupleback);
                     repeat = true;
                 }
 
             } while (repeat);
         }
 
-        private static List<(List<Strata>,List <List<double>>, List<double>)> CrossingOver(List<(List<Strata>, List<List<double>>, List<double>)> individuals)
+        private static List<(List<Strata>,List <List<double>>, List<double>)> CrossingOver(List<(List<Strata>, List<List<double>>, List<double>)> individuals, List<double> reproduction)
         {
             List<(List<Strata>, List <List<double>>, List<double>)> generation = new();
 
@@ -246,7 +307,7 @@ namespace GravityExploration
             for (int j = 0; j < indCount; j++)
             {      
                 int _item1 = 0, _item2 = 0;
-                CheckingForRepetition(ref _item1, ref _item2, individuals.Count, individuals.Count, ref indPairs, ref indRepeat);
+                CheckingForRepetition(ref _item1, ref _item2, individuals.Count, ref indPairs, ref indRepeat, in reproduction);
                 System.Console.WriteLine("Особь первая: {0}\tвторая: {1}", _item1, _item2);
 
                 Random rdObjCount = new();          // Рандом для получения количества объектов особей для замен
@@ -258,7 +319,7 @@ namespace GravityExploration
                 for (int i = 0; i < objCount; i++)
                 {
                     int _obj1 = 0, _obj2 = 0;
-                    CheckingForRepetition(ref _obj1, ref _obj2, individuals[_item1].Item1.Count, individuals[_item2].Item1.Count, ref objPairs, ref objRepeat, true);
+                    CheckingForRepetition(ref _obj1, ref _obj2, individuals[_item1].Item1.Count, individuals[_item2].Item1.Count, ref objPairs, ref objRepeat);
                     System.Console.WriteLine("\tОбъект первый: {0}\tвторой: {1}", _obj1, _obj2);
 
                     Random rdParamsCount = new();
@@ -266,7 +327,6 @@ namespace GravityExploration
 
                     List<int> randomIndexes = new();
                     bool indexesRepeat;
-                    //System.Console.WriteLine("Params count: {0}", paramsCount);
                     for (int k = 0; k < paramsCount; k++)
                     {
                         int _indexParam;
