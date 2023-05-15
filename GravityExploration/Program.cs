@@ -38,6 +38,7 @@ namespace GravityExploration
             List<string[]> _units;                                              // Задание параметров для объектов особи
             List<double> weights = new();
             List<double> reproduction;
+            
 
             // Подготовка к решению обратной задачи (прямая задача)
             // Получение значений аномалии по ЗАРАНЕЕ СОЗДАНЫМ объектам
@@ -86,6 +87,14 @@ namespace GravityExploration
             // Решение обратной задачи
             while (true)
             {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("\nПОКОЛЕНИЕ {0}", p);
+                Console.ResetColor();
+
+                int strongIndividual = weights.IndexOf(weights.Min());
+                Console.WriteLine("strongIndividual = " + strongIndividual);
+                weights.Clear();
+
                 if (Fp_best <= Eps || p >= MaxP)
                 {
                     if(Fp_best <= Eps)
@@ -102,44 +111,20 @@ namespace GravityExploration
                 // Получение решения для полученных особей
                 reproduction = Solution(1, ref populationsOfIndividuals, weights, out Fp_best);
 
-                populationsOfIndividuals[0] = populationsOfIndividuals[1];
-                //populationsOfIndividuals[1].Clear();
+                // Замена слабых особей из нового поколения на сильных особей нового поколения
+                int weakIndividual = weights.IndexOf(weights.Max());
+                Console.WriteLine("weakIndividual = " + weakIndividual);
+                populationsOfIndividuals[1][weakIndividual] = populationsOfIndividuals[0][strongIndividual];
 
-                // Вывод нужной особи и удаление лишних файлов при выходе из программы
-                //System.Console.WriteLine("Решение после свапа");
-                //OutputGraphs(populationsOfIndividuals[1].Count - 1);
+                populationsOfIndividuals[0] = populationsOfIndividuals[1];
 
                 p++;
-
                 //Console.Read();
             }
 
             // Вывод нужной особи и удаление лишних файлов при выходе из программы
             System.Console.WriteLine("\nИтоговые фигуры");
             OutputGraphs(populationsOfIndividuals[0].Count - 1);
-
-            #region Comments
-            //populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0]);
-
-            //// Получение решения для полученных особей
-            //int k = 0;
-            //foreach(var pop in populationsOfIndividuals[1])
-            //{
-            //    DirectProblem back = new(k, pop, GeneralData.trueReadings);
-            //    back.Decision();
-            //    k++;
-
-            //    Console.Write("Функционал: ");
-            //    foreach (var item in pop.Item3)
-            //    {
-            //        Console.WriteLine(item);
-            //    }
-            //}
-
-            //// Вывод нужной особи и удаление лишних файлов при выходе из программы
-            //System.Console.WriteLine("Решение после свапа");
-            //OutputGraphs(populationsOfIndividuals[1].Count-1);
-            #endregion
         }
 
         private static List<double> Solution(int i, ref List<(List<Strata>, List<List<double>>, List<double>)>[] populationsOfIndividuals, List<double> weights, out double Fp_best)
@@ -165,8 +150,6 @@ namespace GravityExploration
 
             Fp_best = weights.Min();
             Console.WriteLine("Лучшая особь {0} с функционалом {1}\n", weights.IndexOf(Fp_best), Fp_best);
-
-            weights.Clear();
 
             return reproduction;
         }
@@ -297,10 +280,6 @@ namespace GravityExploration
         {
             List<(List<Strata>, List <List<double>>, List<double>)> generation = new();
 
-            //Random rdIndCount = new();              // Рандом для получения количества особей для замен
-            //Random rdIndividual = new();            // Рандом для выбора случайной особи
-            //Random rdParam = new();                 // Рандом для выбора параметров для свапа у объекта особи
-
             int indCount = 3;
             List<Tuple<int, int>> indPairs = new();
             bool indRepeat = true;
@@ -315,7 +294,6 @@ namespace GravityExploration
 
                 List<Tuple<int, int>> objPairs = new();
                 bool objRepeat = true;
-                //System.Console.WriteLine("Objects count: {0}", objCount);
                 for (int i = 0; i < objCount; i++)
                 {
                     int _obj1 = 0, _obj2 = 0;
@@ -448,7 +426,7 @@ namespace GravityExploration
                 string[] arr = new string[7];
                 for (int i = 0; i < arr.Length - 1; i++)
                 {
-                    double depth = rand.NextDouble() * -50;
+                    double depth = rand.NextDouble() * Math.Abs(borderMax) * -2;
                     switch (i)
                     {
                         case 0:
@@ -458,7 +436,10 @@ namespace GravityExploration
                             arr[i] = Convert.ToString(RandomDoubleInRange(ys, ye));
                             continue;
                         case 4:
-                            arr[i] = Convert.ToString(RandomDoubleInRange(depth, 0));
+                            arr[i] = Convert.ToString(RandomDoubleInRange(depth, -1));
+                            continue;
+                        case 5:
+                            arr[i] = Convert.ToString(RandomDoubleInRange(1, Math.Abs(double.Parse(arr[i-1]))));
                             continue;
                         default:
                             arr[i] = Convert.ToString(RandomDoubleInRange(1, borderMax));
