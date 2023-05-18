@@ -34,7 +34,7 @@ namespace GravityExploration
             if (trueReadings is not null)
             {
                 int n = trueReadings.Count * trueReadings[0].Count;
-                double E_pogr = 1e-8;
+                double E_pogr = 1e-9;
                 double w;
                 for (int i = 0; i < data.Count; i++)
                 {
@@ -57,14 +57,14 @@ namespace GravityExploration
         static void Main(string[] args)
         {
             // Входные данные
-            int objectsNums = 2;                                // Количество объектов у особи
-            int individualsNums = 10;                           // Количество особей
+            int objectsNums = 5;                                // Количество объектов у особи
+            int individualsNums = 25;                            // Количество особей
             double xs = -5, xe = 5;                             // Границы сетки по OX
             double ys = -5, ye = 5;                             // Границы сетки по OY
 
             // Условия для обратной задачи
             double Eps = 1e-3;                                  // Точность
-            int MaxP = 100;                                     // Максимальное количество итераций
+            int MaxP = 1000;                                     // Максимальное количество итераций
             double Fp_best = 1;                                 // Лучшее значение
             int p = 1;                                          // Итерация
 
@@ -161,15 +161,15 @@ namespace GravityExploration
                 Console.WriteLine("strongIndividual = " + strongIndividual);
                 Console.WriteLine("weakIndividual = " + weakIndividual);
 
-#if false
+#if true
                 if (weightMax > weightMin)
                 {
                     Console.WriteLine(" Заменена особь {0} на {1}", weakIndividual, strongIndividual);
 
-
-
-                    //populationsOfIndividuals[1] = SwapWeakToStrongIndividual(in populationsOfIndividuals, weakIndividual, strongIndividual).ToList();
-                } 
+                    Generation temp = populationsOfIndividuals[1][weakIndividual];
+                    populationsOfIndividuals[1][weakIndividual] = populationsOfIndividuals[0][strongIndividual];
+                    populationsOfIndividuals[0][strongIndividual] = temp;
+                }
 #endif
 
                 foreach (var item in weights)
@@ -181,35 +181,17 @@ namespace GravityExploration
 
                 p++;
 
+#if false
                 Thread.Sleep(1000);
                 string? test = Console.ReadLine();
                 if (test == "test")
                     OutputGraphs(populationsOfIndividuals[0].Count - 1);
+#endif
             }
 
             // Вывод нужной особи и удаление лишних файлов при выходе из программы
             System.Console.WriteLine("\nИтоговые фигуры");
             OutputGraphs(populationsOfIndividuals[0].Count - 1);
-        }
-
-        private static List<(List<Strata>, List<List<double>>, List<double>)> SwapWeakToStrongIndividual(in List<(List<Strata>, List<List<double>>, List<double>)>[] input, int weakIndividual, int strongIndividual)
-        {
-            List<(List<Strata>, List<List<double>>, List<double>)> temp = new();
-            for (int i = 0; i < input[1].Count; i++)
-            {
-                if (i != weakIndividual)
-                {
-                    (List<Strata>, List<List<double>>, List<double>) addTemp = input[1][i];
-                    temp.Add(addTemp);
-                }
-                else
-                {
-                    (List<Strata>, List<List<double>>, List<double>) addTemp = input[0][strongIndividual];
-                    temp.Add(addTemp);
-                }
-            }
-
-            return temp;
         }
 
         private static List<double> Solution(int i, List<Generation>[] populationsOfIndividuals, List<double> weights, out double Fp_best)
@@ -236,7 +218,7 @@ namespace GravityExploration
             Fp_best = weights.Min();
             foreach (var func in weights)
             {
-                if(func == weights[weights.IndexOf(Fp_best)])
+                if (func == weights[weights.IndexOf(Fp_best)])
                 {
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.Write("{0:F3} ", func);
@@ -247,7 +229,7 @@ namespace GravityExploration
             }
             Console.WriteLine();
 
-            
+
             Console.Write("Лучшая особь ");
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.Write("{0} ", weights.IndexOf(Fp_best));
@@ -328,7 +310,6 @@ namespace GravityExploration
                 }
                 else
                 {
-                    //Console.WriteLine("Повторение особей");
                     repeat = true;
                 }
 
@@ -337,7 +318,6 @@ namespace GravityExploration
             int randI(int count, in List<double> Reproduction)
             {
                 double rdIndexItem = rand.NextDouble();
-                //Console.WriteLine("Тык: " + rdIndexItem);
                 int rdI = GetItemIndex(count, rdIndexItem, in Reproduction);
                 return rdI;
             }
@@ -427,25 +407,12 @@ namespace GravityExploration
                             else
                             {
                                 indexesRepeat = true;
-                                //System.Console.WriteLine("\t\tПовторение");
                             }
                         } while (indexesRepeat);
                         Swap(_indexParam, individuals[_item1].individual[_obj1], individuals[_item2].individual[_obj2]);
                     }
                 }
             }
-
-            //foreach (var item in individuals)
-            //{
-            //    List<double> functional = new();
-            //    List<List<double>> Z = new();
-            //    List<Strata> list = new();
-            //    foreach (var unit in item.Item1)
-            //        list.Add(unit);
-            //    generation.Add((list, Z, functional));
-            //}
-            //return generation;
-
             return individuals;
         }
 
