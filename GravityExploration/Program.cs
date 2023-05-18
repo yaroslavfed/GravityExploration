@@ -23,13 +23,13 @@ namespace GravityExploration
         static void Main(string[] args)
         {
             // Входные данные
-            int objectsNums = 3;                        // Количество объектов у особи
-            int individualsNums = 3;                    // Количество особей
+            int objectsNums = 2;                        // Количество объектов у особи
+            int individualsNums = 10;                    // Количество особей
             double xs = -5, xe = 5;                     // Границы сетки по OX
             double ys = -5, ye = 5;                     // Границы сетки по OY
 
             // Условия для обратной задачи
-            double Eps = 1e-8;                          // Точность
+            double Eps = 1e-3;                          // Точность
             int MaxP = 100;                             // Максимальное количество итераций
             double Fp_best = 1;                         // Лучшее значение
             int p = 0;                                  // Итерация
@@ -75,51 +75,87 @@ namespace GravityExploration
             }
 
             // Массив для получения новых особей
-            populationsOfIndividuals[0] = Population;
+            populationsOfIndividuals[0] = Population.ToList();
+            Population.Clear();
 
             // Получение решения для первоначальных особей
-            reproduction = Solution(0, ref populationsOfIndividuals, weights, out Fp_best);
+            reproduction = Solution(0, populationsOfIndividuals, weights, out Fp_best).ToList();
 
-            // Вывод нужной особи и удаление лишних файлов при выходе из программы
+            // Вывод нужной особи и удаление лишних файлов
             System.Console.WriteLine("Решение первоначальное");
             OutputGraphs(populationsOfIndividuals[0].Count-1);
 
             // Решение обратной задачи
             while (true)
             {
-                Console.ForegroundColor = ConsoleColor.Green;
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.WriteLine("\nПОКОЛЕНИЕ {0}", p);
                 Console.ResetColor();
 
-                int strongIndividual = weights.IndexOf(weights.Min());
+                double weightMin = weights.Min();
+                Console.WriteLine("weightMin = " + weightMin);
+                int strongIndividual = weights.IndexOf(weightMin);
                 Console.WriteLine("strongIndividual = " + strongIndividual);
                 weights.Clear();
 
                 if (Fp_best <= Eps || p >= MaxP)
                 {
                     if(Fp_best <= Eps)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
                         Console.WriteLine("Достигнута искомая точность");
+                        Console.ResetColor();
+                    }
                     if (p >= MaxP)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Достигнут предел поколений");
+                        Console.ResetColor();
+                    }
                     break;
                 }
 
                 DeleteFiles();
 
-                populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0], reproduction);
+                populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0], in reproduction).ToList();
 
                 // Получение решения для полученных особей
-                reproduction = Solution(1, ref populationsOfIndividuals, weights, out Fp_best);
+                reproduction = Solution(1, populationsOfIndividuals, weights, out Fp_best).ToList();
 
                 // Замена слабых особей из нового поколения на сильных особей нового поколения
-                int weakIndividual = weights.IndexOf(weights.Max());
+                double weightMax = weights.Max();
+                Console.WriteLine("weightMin = " + weightMin);
+                Console.WriteLine("weightMax = " + weightMax);
+                int weakIndividual = weights.IndexOf(weightMax);
+                Console.WriteLine("strongIndividual = " + strongIndividual);
                 Console.WriteLine("weakIndividual = " + weakIndividual);
-                populationsOfIndividuals[1][weakIndividual] = populationsOfIndividuals[0][strongIndividual];
 
-                populationsOfIndividuals[0] = populationsOfIndividuals[1];
+                if (weightMax > weightMin)
+                {
+                    Console.WriteLine(" Заменена особь {0} на {1}", weakIndividual, strongIndividual);
+
+                    (List<Strata>, List<List<double>>, List<double>) temp;
+                    temp = populationsOfIndividuals[0][strongIndividual];
+                    populationsOfIndividuals[1][weakIndividual] = temp;
+                    populationsOfIndividuals[0][strongIndividual] = populationsOfIndividuals[1][weakIndividual];
+
+
+                    //populationsOfIndividuals[1] = SwapWeakToStrongIndividual(in populationsOfIndividuals, weakIndividual, strongIndividual).ToList();
+                }
+
+                foreach(var item in weights)
+                    Console.WriteLine("\t" + item);
+                Console.WriteLine();
+
+                populationsOfIndividuals[0] = populationsOfIndividuals[1].ToList();
+                populationsOfIndividuals[1].Clear();
 
                 p++;
-                //Console.Read();
+
+                Thread.Sleep(1000);
+                string? test = Console.ReadLine();
+                if (test == "test")
+                    OutputGraphs(populationsOfIndividuals[0].Count - 1);
             }
 
             // Вывод нужной особи и удаление лишних файлов при выходе из программы
@@ -127,7 +163,27 @@ namespace GravityExploration
             OutputGraphs(populationsOfIndividuals[0].Count - 1);
         }
 
-        private static List<double> Solution(int i, ref List<(List<Strata>, List<List<double>>, List<double>)>[] populationsOfIndividuals, List<double> weights, out double Fp_best)
+        private static List<(List<Strata>, List<List<double>>, List<double>)> SwapWeakToStrongIndividual(in List<(List<Strata>, List<List<double>>, List<double>)>[] input, int weakIndividual, int strongIndividual)
+        {
+            List<(List<Strata>, List<List<double>>, List<double>)> temp = new();
+            for (int i = 0; i < input[1].Count; i++)
+            {
+                if (i != weakIndividual)
+                {
+                    (List<Strata>, List<List<double>>, List<double>) addTemp = input[1][i];
+                    temp.Add(addTemp);
+                }
+                else
+                {
+                    (List<Strata>, List<List<double>>, List<double>) addTemp = input[0][strongIndividual];
+                    temp.Add(addTemp);
+                }
+            }
+
+            return temp;
+        }
+
+        private static List<double> Solution(int i, List<(List<Strata>, List<List<double>>, List<double>)>[] populationsOfIndividuals, List<double> weights, out double Fp_best)
         {
             int q = 0;
             foreach (var pop in populationsOfIndividuals[i])
@@ -276,7 +332,7 @@ namespace GravityExploration
             } while (repeat);
         }
 
-        private static List<(List<Strata>,List <List<double>>, List<double>)> CrossingOver(List<(List<Strata>, List<List<double>>, List<double>)> individuals, List<double> reproduction)
+        private static List<(List<Strata>,List <List<double>>, List<double>)> CrossingOver(List<(List<Strata>, List<List<double>>, List<double>)> individuals, in List<double> reproduction)
         {
             List<(List<Strata>, List <List<double>>, List<double>)> generation = new();
 
@@ -427,6 +483,8 @@ namespace GravityExploration
                 for (int i = 0; i < arr.Length - 1; i++)
                 {
                     double depth = rand.NextDouble() * Math.Abs(borderMax) * -2;
+                    if (depth >= 0) depth = -2;
+                    
                     switch (i)
                     {
                         case 0:
@@ -439,7 +497,7 @@ namespace GravityExploration
                             arr[i] = Convert.ToString(RandomDoubleInRange(depth, -1));
                             continue;
                         case 5:
-                            arr[i] = Convert.ToString(RandomDoubleInRange(1, Math.Abs(double.Parse(arr[i-1]))));
+                            arr[i] = Convert.ToString(RandomDoubleInRange(1, Math.Abs(double.Parse(arr[4]))));
                             continue;
                         default:
                             arr[i] = Convert.ToString(RandomDoubleInRange(1, borderMax));
@@ -447,7 +505,8 @@ namespace GravityExploration
                     }
                 }
                 Random rd = new();
-                arr[arr.Length - 1] = Convert.ToString(rd.Next(2000, 4000));
+                //arr[arr.Length - 1] = Convert.ToString(rd.Next(2000, 4000));
+                arr[arr.Length - 1] = "3000";
                 PrimaryGeneration.Add(arr);
             }
 

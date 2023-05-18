@@ -25,18 +25,18 @@ namespace GravityExploration
         {
             List<Piece> Pieces = new();
 
-            System.Console.WriteLine();
+            //System.Console.WriteLine();
             foreach (var unit in Generation)
                 SplitGrid(ref Pieces, unit.CentreZ, unit.StepZ, unit.CentreX, unit.StepX, unit.CentreY, unit.StepY, unit.Density);
 
             #region Output
-            int p = 0;
-            foreach (var strata in Generation)
-            {
-                Console.WriteLine(String.Format("Stratas: {0}\t x: {1} +- {2}\n\t\t y: {3} +- {4}\n\t\t z: {5} +- {6}\n\t{7}", p, strata.CentreX, strata.StepX, strata.CentreY, strata.StepY, strata.CentreZ, strata.StepZ, strata.Density));
-                Console.WriteLine();
-                p++;
-            }
+            //int p = 0;
+            //foreach (var strata in Generation)
+            //{
+            //    Console.WriteLine(String.Format("Stratas: {0}\t x: {1} +- {2}\n\t\t y: {3} +- {4}\n\t\t z: {5} +- {6}\n\t{7}", p, strata.CentreX, strata.StepX, strata.CentreY, strata.StepY, strata.CentreZ, strata.StepZ, strata.Density));
+            //    Console.WriteLine();
+            //    p++;
+            //}
 
             // int k = 0;
             // foreach (var piece in Pieces)
@@ -54,9 +54,9 @@ namespace GravityExploration
 
         private void SplitGrid(ref List<Piece> Pieces, double zC, double zS, double xC, double xS, double yC, double yS, double RO)
         {
-            Console.WriteLine("x: {0} -> {1}", xC - xS, xC + xS);
-            Console.WriteLine("y: {0} -> {1}", yC - yS, yC + yS);
-            Console.WriteLine("z: {0} -> {1}", zC - zS, zC + zS);
+            //Console.WriteLine("x: {0} -> {1}", xC - xS, xC + xS);
+            //Console.WriteLine("y: {0} -> {1}", yC - yS, yC + yS);
+            //Console.WriteLine("z: {0} -> {1}", zC - zS, zC + zS);
 
             double delta_x = Abs((xC + xS) - (xC - xS));
             double delta_y = Abs((yC + yS) - (yC - yS));
@@ -74,8 +74,8 @@ namespace GravityExploration
                 h = comparison.Min();
             else
                 h = comparison.Max() * 0.4;
-            Console.WriteLine("h: " + h);
-            Console.WriteLine();
+            //Console.WriteLine("h: " + h);
+            //Console.WriteLine();
 
             GetSplit(ref Pieces, h, delta_y/h, delta_x/h, delta_z/h, zC - zS, xC - xS, yC - yS, RO);
         }
@@ -115,10 +115,22 @@ namespace GravityExploration
         {
             if (trueReadings is not null)
             {
+                int n = trueReadings.Count * trueReadings[0].Count;
+                double E_pogr = 1e-8;
+                double w;
                 double result = 0;
                 for (int i = 0; i < localReadings.Count; i++)
+                {
                     for (int j = 0; j < localReadings[i].Count; j++)
-                        result += Math.Pow((trueReadings[i][j] - localReadings[i][j]), 2);
+                    {
+                        if (Math.Abs(trueReadings[i][j]) < Math.Abs(E_pogr))
+                            w = 1 / Math.Abs(E_pogr);
+                        else
+                            w = 1 / Math.Abs(trueReadings[i][j]);
+                        result += Math.Pow(w * (localReadings[i][j] - trueReadings[i][j]), 2);
+                    }
+                }
+                result /= n;
                 functional.Add(result);
             }
         }
