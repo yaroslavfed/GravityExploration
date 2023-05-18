@@ -57,14 +57,14 @@ namespace GravityExploration
         static void Main(string[] args)
         {
             // Входные данные
-            int objectsNums = 5;                                // Количество объектов у особи
-            int individualsNums = 25;                            // Количество особей
+            int objectsNums = 2;                                // Количество объектов у особи
+            int individualsNums = 10;                           // Количество особей
             double xs = -5, xe = 5;                             // Границы сетки по OX
             double ys = -5, ye = 5;                             // Границы сетки по OY
 
             // Условия для обратной задачи
-            double Eps = 1e-3;                                  // Точность
-            int MaxP = 1000;                                     // Максимальное количество итераций
+            double Eps = 0.3;                                   // Точность
+            int MaxP = 100;                                     // Максимальное количество итераций
             double Fp_best = 1;                                 // Лучшее значение
             int p = 1;                                          // Итерация
 
