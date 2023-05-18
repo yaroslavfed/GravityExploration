@@ -10,22 +10,18 @@ namespace GravityExploration
         private List<double> functional = new();
         private readonly List<Strata> Generation = new();
         private readonly List<List<double>> Z = new();
-        private readonly List<List<double>> trueRecords = new();
 
-        public DirectProblem(int number, (List<Strata>, List<List<double>>, List<double>) Population, List<List<double>> trueRecords = null)
+        public DirectProblem(int number, Generation _generation)
         {
             this.number = number;
-            this.Generation = Population.Item1;
-            this.Z = Population.Item2;
-            this.functional = Population.Item3;
-            this.trueRecords = trueRecords;
+            this.Generation = _generation.individual;
+            this.Z = _generation.data;
         }
 
         public void Decision()
         {
             List<Piece> Pieces = new();
 
-            //System.Console.WriteLine();
             foreach (var unit in Generation)
                 SplitGrid(ref Pieces, unit.CentreZ, unit.StepZ, unit.CentreX, unit.StepX, unit.CentreY, unit.StepY, unit.Density);
 
@@ -48,7 +44,6 @@ namespace GravityExploration
             #endregion Output
 
             GetAnomalyMap(Pieces, Z);
-            GetFunctional(trueRecords, Z, functional);
             AddToTxt(Pieces, Generation, Z);
         }
 
@@ -111,29 +106,29 @@ namespace GravityExploration
             }
         }
 
-        private static void GetFunctional(List<List<double>> trueReadings, List<List<double>> localReadings, List<double> functional)
-        {
-            if (trueReadings is not null)
-            {
-                int n = trueReadings.Count * trueReadings[0].Count;
-                double E_pogr = 1e-8;
-                double w;
-                double result = 0;
-                for (int i = 0; i < localReadings.Count; i++)
-                {
-                    for (int j = 0; j < localReadings[i].Count; j++)
-                    {
-                        if (Math.Abs(trueReadings[i][j]) < Math.Abs(E_pogr))
-                            w = 1 / Math.Abs(E_pogr);
-                        else
-                            w = 1 / Math.Abs(trueReadings[i][j]);
-                        result += Math.Pow(w * (localReadings[i][j] - trueReadings[i][j]), 2);
-                    }
-                }
-                result /= n;
-                functional.Add(result);
-            }
-        }
+        //private static void GetFunctional(List<List<double>> trueReadings, List<List<double>> localReadings, List<double> functional)
+        //{
+        //    if (trueReadings is not null)
+        //    {
+        //        int n = trueReadings.Count * trueReadings[0].Count;
+        //        double E_pogr = 1e-8;
+        //        double w;
+        //        double result = 0;
+        //        for (int i = 0; i < localReadings.Count; i++)
+        //        {
+        //            for (int j = 0; j < localReadings[i].Count; j++)
+        //            {
+        //                if (Math.Abs(trueReadings[i][j]) < Math.Abs(E_pogr))
+        //                    w = 1 / Math.Abs(E_pogr);
+        //                else
+        //                    w = 1 / Math.Abs(trueReadings[i][j]);
+        //                result += Math.Pow(w * (localReadings[i][j] - trueReadings[i][j]), 2);
+        //            }
+        //        }
+        //        result /= n;
+        //        functional.Add(result);
+        //    }
+        //}
 
         private void GetAnomalyMap(List<Piece> Pieces, List<List<double>> Z)
         {

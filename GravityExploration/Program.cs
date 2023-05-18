@@ -15,7 +15,41 @@ namespace GravityExploration
         // Входные данные для обратной задачи (сетка датчиков и их показания)
         public static readonly List<double> X = new();
         public static readonly List<double> Y = new();
-        public static readonly List<List<double>> trueReadings = new();
+        public static List<List<double>> trueReadings = new();
+    }
+
+    public class Generation
+    {
+        public Generation(List<Strata> individual)
+        {
+            this.individual = individual;
+        }
+
+        public List<Strata> individual = new();
+        public List<List<double>> data = new();
+        public double Functional { get; private set; }
+
+        public void GetFunctional(List<List<double>> trueReadings)
+        {
+            if (trueReadings is not null)
+            {
+                int n = trueReadings.Count * trueReadings[0].Count;
+                double E_pogr = 1e-8;
+                double w;
+                for (int i = 0; i < data.Count; i++)
+                {
+                    for (int j = 0; j < data[i].Count; j++)
+                    {
+                        if (Math.Abs(trueReadings[i][j]) < Math.Abs(E_pogr))
+                            w = 1 / Math.Abs(E_pogr);
+                        else
+                            w = 1 / Math.Abs(trueReadings[i][j]);
+                        Functional += Math.Pow(w * (data[i][j] - trueReadings[i][j]), 2);
+                    }
+                }
+                Functional /= n;
+            }
+        }
     }
 
     internal class Program
@@ -23,25 +57,21 @@ namespace GravityExploration
         static void Main(string[] args)
         {
             // Входные данные
-            int objectsNums = 2;                        // Количество объектов у особи
-            int individualsNums = 10;                    // Количество особей
-            double xs = -5, xe = 5;                     // Границы сетки по OX
-            double ys = -5, ye = 5;                     // Границы сетки по OY
+            int objectsNums = 2;                                // Количество объектов у особи
+            int individualsNums = 10;                           // Количество особей
+            double xs = -5, xe = 5;                             // Границы сетки по OX
+            double ys = -5, ye = 5;                             // Границы сетки по OY
 
             // Условия для обратной задачи
-            double Eps = 1e-3;                          // Точность
-            int MaxP = 100;                             // Максимальное количество итераций
-            double Fp_best = 1;                         // Лучшее значение
-            int p = 0;                                  // Итерация
+            double Eps = 1e-3;                                  // Точность
+            int MaxP = 100;                                     // Максимальное количество итераций
+            double Fp_best = 1;                                 // Лучшее значение
+            int p = 1;                                          // Итерация
 
-            List<(List<Strata>, List <List<double>>, List<double>)> Population = new();       // Список особей (особь - набор объектов)
-            List<string[]> _units;                                              // Задание параметров для объектов особи
+            List<string[]> _units;                              // Задание параметров для объектов особи
             List<double> weights = new();
             List<double> reproduction;
-            
 
-            // Подготовка к решению обратной задачи (прямая задача)
-            // Получение значений аномалии по ЗАРАНЕЕ СОЗДАНЫМ объектам
             #region Receivers
             for (double i = xs; i <= xe; i += 1)
             {
@@ -53,30 +83,32 @@ namespace GravityExploration
             }
             #endregion Receivers
 
+            // Подготовка к решению обратной задачи (прямая задача)
+            // Получение значений аномалии по ЗАРАНЕЕ ЗАДАННЫМ объектам
+            // Подготовка эсперементальных данных
+
             string DataPath = Path.Combine(Directory.GetCurrentDirectory(), "Data.txt");
 
             _units = ReadFile(DataPath);
-            Population.Add(AddGeneration(_units, GeneralData.trueReadings));
 
-            DirectProblem forward = new(-1, Population[0]);
+            Generation _experimentalGeneration = new(AddGeneration(_units));
+            DirectProblem forward = new(-1, _experimentalGeneration);
             forward.Decision();
-            Population.Clear();
+            GeneralData.trueReadings = _experimentalGeneration.data.ToList();
 
             // Решение обратной задачи
-            // Массив особей для кроссинговера
-            List<(List<Strata>, List<List<double>>, List<double>)>[] populationsOfIndividuals = new List<(List<Strata>, List<List<double>>, List<double>)>[2];
+            // Массив особей для обратной задачи
+            List<Generation>[] populationsOfIndividuals = new List<Generation>[2];
 
             // Генерация случайных особей (первоначальное поколение)
+            List<Generation> tempPopulation = new();
             for (int i = 0; i < individualsNums; i++)
             {
-                List<List<double>> Z = new();
                 _units = SetPrimaryGeneration(objectsNums, xs, xe, ys, ye);
-                Population.Add(AddGeneration(_units, Z));
+                Generation _generation = new(AddGeneration(_units));
+                tempPopulation.Add(_generation);
             }
-
-            // Массив для получения новых особей
-            populationsOfIndividuals[0] = Population.ToList();
-            Population.Clear();
+            populationsOfIndividuals[0] = tempPopulation.ToList();
 
             // Получение решения для первоначальных особей
             reproduction = Solution(0, populationsOfIndividuals, weights, out Fp_best).ToList();
@@ -98,28 +130,27 @@ namespace GravityExploration
                 Console.WriteLine("strongIndividual = " + strongIndividual);
                 weights.Clear();
 
-                if (Fp_best <= Eps || p >= MaxP)
+                if(Fp_best <= Eps)
                 {
-                    if(Fp_best <= Eps)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine("Достигнута искомая точность");
-                        Console.ResetColor();
-                    }
-                    if (p >= MaxP)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Достигнут предел поколений");
-                        Console.ResetColor();
-                    }
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Достигнута искомая точность");
+                    Console.ResetColor();
+                    break;
+                }
+                if (p >= MaxP)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Достигнут предел поколений");
+                    Console.ResetColor();
                     break;
                 }
 
                 DeleteFiles();
 
+                // Операция кроссинговера для получения новых особей
                 populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0], in reproduction).ToList();
 
-                // Получение решения для полученных особей
+                // Решение прямой задачи для полученных особей
                 reproduction = Solution(1, populationsOfIndividuals, weights, out Fp_best).ToList();
 
                 // Замена слабых особей из нового поколения на сильных особей нового поколения
@@ -130,20 +161,18 @@ namespace GravityExploration
                 Console.WriteLine("strongIndividual = " + strongIndividual);
                 Console.WriteLine("weakIndividual = " + weakIndividual);
 
+#if false
                 if (weightMax > weightMin)
                 {
                     Console.WriteLine(" Заменена особь {0} на {1}", weakIndividual, strongIndividual);
 
-                    (List<Strata>, List<List<double>>, List<double>) temp;
-                    temp = populationsOfIndividuals[0][strongIndividual];
-                    populationsOfIndividuals[1][weakIndividual] = temp;
-                    populationsOfIndividuals[0][strongIndividual] = populationsOfIndividuals[1][weakIndividual];
 
 
                     //populationsOfIndividuals[1] = SwapWeakToStrongIndividual(in populationsOfIndividuals, weakIndividual, strongIndividual).ToList();
-                }
+                } 
+#endif
 
-                foreach(var item in weights)
+                foreach (var item in weights)
                     Console.WriteLine("\t" + item);
                 Console.WriteLine();
 
@@ -183,29 +212,51 @@ namespace GravityExploration
             return temp;
         }
 
-        private static List<double> Solution(int i, List<(List<Strata>, List<List<double>>, List<double>)>[] populationsOfIndividuals, List<double> weights, out double Fp_best)
+        private static List<double> Solution(int i, List<Generation>[] populationsOfIndividuals, List<double> weights, out double Fp_best)
         {
             int q = 0;
             foreach (var pop in populationsOfIndividuals[i])
             {
-                DirectProblem back = new(q, pop, GeneralData.trueReadings);
+                pop.data.Clear();
+                DirectProblem back = new(q, pop);
                 back.Decision();
-                weights.Add(pop.Item3.First());
+
+                pop.GetFunctional(GeneralData.trueReadings);
                 q++;
 
                 Console.Write("Функционал: ");
-                Console.WriteLine(pop.Item3.First());
+                Console.WriteLine(pop.Functional);
+
+                weights.Add(pop.Functional);
             }
 
             List<double> reproduction = GetReproduction(weights);
 
             Console.Write("Функционалы поколения: ");
+            Fp_best = weights.Min();
             foreach (var func in weights)
-                Console.Write(func + " ");
+            {
+                if(func == weights[weights.IndexOf(Fp_best)])
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write("{0:F3} ", func);
+                    Console.ResetColor();
+                }
+                else
+                    Console.Write("{0:F3} ", func);
+            }
             Console.WriteLine();
 
-            Fp_best = weights.Min();
-            Console.WriteLine("Лучшая особь {0} с функционалом {1}\n", weights.IndexOf(Fp_best), Fp_best);
+            
+            Console.Write("Лучшая особь ");
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("{0} ", weights.IndexOf(Fp_best));
+            Console.ResetColor();
+            Console.Write("с функционалом ");
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("{0:F5}\n", Fp_best);
+            Console.ResetColor();
+            Console.WriteLine();
 
             return reproduction;
         }
@@ -235,7 +286,7 @@ namespace GravityExploration
                 reproduction.Add(item / functionalitySum);
             }
 
-            Console.WriteLine("\nВерятность выбора");
+            Console.WriteLine("\nВерятность выбора:");
             foreach (var item in reproduction)
                 Console.Write(item + " ");
             Console.WriteLine();
@@ -243,7 +294,7 @@ namespace GravityExploration
             for (int i = 1; i < reproduction.Count; i++)
                 reproduction[i] += reproduction[i - 1];
 
-            Console.WriteLine("\nПрямая 0 -> 1");
+            Console.WriteLine("\nПрямая 0 -> 1:");
             foreach (var item in reproduction)
                 Console.Write(item + " ");
             Console.WriteLine();
@@ -332,32 +383,33 @@ namespace GravityExploration
             } while (repeat);
         }
 
-        private static List<(List<Strata>,List <List<double>>, List<double>)> CrossingOver(List<(List<Strata>, List<List<double>>, List<double>)> individuals, in List<double> reproduction)
+        private static List<Generation> CrossingOver(List<Generation> individuals, in List<double> reproduction)
         {
-            List<(List<Strata>, List <List<double>>, List<double>)> generation = new();
+            List<Generation> generation = new();
 
-            int indCount = 3;
+            Random rdIndCount = new();                  // Рандом для получения количества особей для замен
+            int indCount = rdIndCount.Next(1, individuals.Count + 1);
             List<Tuple<int, int>> indPairs = new();
             bool indRepeat = true;
             for (int j = 0; j < indCount; j++)
             {      
                 int _item1 = 0, _item2 = 0;
                 CheckingForRepetition(ref _item1, ref _item2, individuals.Count, ref indPairs, ref indRepeat, in reproduction);
-                System.Console.WriteLine("Особь первая: {0}\tвторая: {1}", _item1, _item2);
+                System.Console.WriteLine("Особь: {0} <-> {1}", _item1, _item2);
 
-                Random rdObjCount = new();          // Рандом для получения количества объектов особей для замен
-                int objCount = rdObjCount.Next(1, individuals[0].Item1.Count);
+                Random rdObjCount = new();              // Рандом для получения количества объектов особей для замен
+                int objCount = rdObjCount.Next(1, individuals[0].individual.Count + 1);
 
                 List<Tuple<int, int>> objPairs = new();
                 bool objRepeat = true;
                 for (int i = 0; i < objCount; i++)
                 {
                     int _obj1 = 0, _obj2 = 0;
-                    CheckingForRepetition(ref _obj1, ref _obj2, individuals[_item1].Item1.Count, individuals[_item2].Item1.Count, ref objPairs, ref objRepeat);
-                    System.Console.WriteLine("\tОбъект первый: {0}\tвторой: {1}", _obj1, _obj2);
+                    CheckingForRepetition(ref _obj1, ref _obj2, individuals[_item1].individual.Count, individuals[_item2].individual.Count, ref objPairs, ref objRepeat);
+                    System.Console.WriteLine("\tОбъект: {0} <-> {1}", _obj1, _obj2);
 
-                    Random rdParamsCount = new();
-                    int paramsCount = rdParamsCount.Next(1, individuals[0].Item1[0].Params!.Count);
+                    Random rdParamsCount = new();       // Рандом для получения количества параметров объекта для замены
+                    int paramsCount = rdParamsCount.Next(1, individuals[0].individual[0].Params!.Count + 1);
 
                     List<int> randomIndexes = new();
                     bool indexesRepeat;
@@ -366,7 +418,7 @@ namespace GravityExploration
                         int _indexParam;
                         do
                         {
-                            _indexParam = rdParamsCount.Next(individuals[0].Item1[0].Params!.Count);
+                            _indexParam = rdParamsCount.Next(individuals[0].individual[0].Params!.Count);
                             if (!randomIndexes.Contains(_indexParam))
                             {
                                 indexesRepeat = false;
@@ -375,25 +427,26 @@ namespace GravityExploration
                             else
                             {
                                 indexesRepeat = true;
-                                System.Console.WriteLine("\t\tПовторение");
+                                //System.Console.WriteLine("\t\tПовторение");
                             }
                         } while (indexesRepeat);
-                        Swap(_indexParam, individuals[_item1].Item1[_obj1], individuals[_item2].Item1[_obj2]);
+                        Swap(_indexParam, individuals[_item1].individual[_obj1], individuals[_item2].individual[_obj2]);
                     }
                 }
             }
 
-            foreach (var item in individuals)
-            {
-                List<double> functional = new();
-                List<List<double>> Z = new();
-                List<Strata> list = new();
-                foreach (var unit in item.Item1)
-                    list.Add(unit);
-                generation.Add((list, Z, functional));
-            }
+            //foreach (var item in individuals)
+            //{
+            //    List<double> functional = new();
+            //    List<List<double>> Z = new();
+            //    List<Strata> list = new();
+            //    foreach (var unit in item.Item1)
+            //        list.Add(unit);
+            //    generation.Add((list, Z, functional));
+            //}
+            //return generation;
 
-            return generation;
+            return individuals;
         }
 
         private static void Swap(int index, Strata item1, Strata item2)
@@ -405,8 +458,8 @@ namespace GravityExploration
                 item1.Params[index] = item2.Params[index];
                 item2.Params[index] = temp;
 
-                System.Console.WriteLine("\t\tIndex: {0}", index);
-                System.Console.WriteLine("\t\t\tSwap to: {0} from: {1}", item1.Params[index], item2.Params[index]);
+                System.Console.WriteLine("\t\tПараметр: {0}", index);
+                System.Console.WriteLine("\t\t\tЗамена: {0} <-> {1}", item1.Params[index], item2.Params[index]);
 
                 Init(item1);
                 Init(item2);
@@ -417,11 +470,11 @@ namespace GravityExploration
 
         private static void OutputGraphs(int indCount)
         {
-            Console.WriteLine("Введите номер особи от -1 до {0} (где -1 - это дано, а от 0 до {0} - особи текущего поколения): ", indCount);
+            Console.WriteLine("Введите номер особи из {0}: ", indCount);
             while (true)
             {
                 string? a = Console.ReadLine();
-                if (a != "exit")
+                if (a != "next")
                 {
                     if (int.TryParse(a, out int result))
                         DrawPlot(result);
@@ -467,7 +520,7 @@ namespace GravityExploration
 
         private static List<string[]> SetPrimaryGeneration(int num, double xs, double xe, double ys, double ye)
         {
-            List<string[]> PrimaryGeneration = new();
+            List<string[]> primaryGeneration = new();
             Random rand = new();
 
             double[] borders = new double[4];
@@ -507,7 +560,7 @@ namespace GravityExploration
                 Random rd = new();
                 //arr[arr.Length - 1] = Convert.ToString(rd.Next(2000, 4000));
                 arr[arr.Length - 1] = "3000";
-                PrimaryGeneration.Add(arr);
+                primaryGeneration.Add(arr);
             }
 
             static double RandomDoubleInRange(double minValue, double maxValue)
@@ -516,13 +569,12 @@ namespace GravityExploration
                 return minValue + rand.NextDouble() * (maxValue - minValue);
             }   
 
-            return PrimaryGeneration;
+            return primaryGeneration;
         }
 
-        private static (List<Strata>, List<List<double>>, List<double>) AddGeneration(List<string[]> _units, List<List<double>> Result)
+        private static List<Strata> AddGeneration(List<string[]> _units)
         {
             List<Strata> Units = new();
-            List<double> functional = new();
 
             for (int i = 0; i < _units.Count; i++)
             {
@@ -531,7 +583,7 @@ namespace GravityExploration
                 Units.Add(unit);
             }
 
-            return (Units, Result, functional);
+            return Units;
         }
 
         private static void DrawPlot(int number)

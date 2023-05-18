@@ -28,7 +28,7 @@ ax1 = fig.add_subplot(212, projection='3d')
 
 xgrid, ygrid = np.meshgrid(xf, yf)
 zgrid = xgrid * xgrid * 0
-ax1.plot_surface(xgrid, ygrid, zgrid, alpha=.3, color='k')
+ax1.plot_wireframe(xgrid, ygrid, zgrid, alpha=.8, color='k')
 
 for i in range(int(nums)):
     points = np.array([[units[i][0], units[i][2], units[i][4]],
@@ -73,7 +73,8 @@ xgrid, ygrid = np.meshgrid(xf, yf)
 
 zgrid = np.array(res_arr)
 
-ax2.plot_surface(xgrid, ygrid, zgrid, cmap='jet')
+surf = ax2.plot_surface(xgrid, ygrid, zgrid, cmap = 'gnuplot2')
+fig.colorbar(surf, ax=ax2)
 
 ax1.axis("equal")
 
