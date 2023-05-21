@@ -29,12 +29,11 @@ namespace GravityExploration
         public List<List<double>> data = new();
         public double Functional { get; private set; }
 
-        public void GetFunctional(List<List<double>> trueReadings)
+        public void GetFunctional(List<List<double>> trueReadings, double E_pogr)
         {
             if (trueReadings is not null)
             {
                 int n = trueReadings.Count * trueReadings[0].Count;
-                double E_pogr = 1e-9;
                 double w;
                 for (int i = 0; i < data.Count; i++)
                 {
@@ -57,14 +56,14 @@ namespace GravityExploration
         static void Main(string[] args)
         {
             // Входные данные
-            int objectsNums = 2;                                // Количество объектов у особи
-            int individualsNums = 10;                           // Количество особей
+            int objectsNums;                                    // Количество объектов у особи
+            int individualsNums = 50;                           // Количество особей
             double xs = -5, xe = 5;                             // Границы сетки по OX
             double ys = -5, ye = 5;                             // Границы сетки по OY
 
             // Условия для обратной задачи
             double Eps = 0.3;                                   // Точность
-            int MaxP = 100;                                     // Максимальное количество итераций
+            int MaxP = 1000;                                    // Максимальное количество итераций
             double Fp_best = 1;                                 // Лучшее значение
             int p = 1;                                          // Итерация
 
@@ -96,6 +95,14 @@ namespace GravityExploration
             forward.Decision();
             GeneralData.trueReadings = _experimentalGeneration.data.ToList();
 
+            // Расчет порогового значения Eps
+            List<double>? tempEps = new List<double>();
+            foreach (var list in GeneralData.trueReadings)
+            {
+                tempEps.Add(list.Max());
+            }
+            double E_pogr = tempEps.Max() / 100.0;
+
             // Решение обратной задачи
             // Массив особей для обратной задачи
             List<Generation>[] populationsOfIndividuals = new List<Generation>[2];
@@ -104,6 +111,8 @@ namespace GravityExploration
             List<Generation> tempPopulation = new();
             for (int i = 0; i < individualsNums; i++)
             {
+                Random rdCount = new();
+                objectsNums = rdCount.Next(1, 5);
                 _units = SetPrimaryGeneration(objectsNums, xs, xe, ys, ye);
                 Generation _generation = new(AddGeneration(_units));
                 tempPopulation.Add(_generation);
@@ -111,7 +120,7 @@ namespace GravityExploration
             populationsOfIndividuals[0] = tempPopulation.ToList();
 
             // Получение решения для первоначальных особей
-            reproduction = Solution(0, populationsOfIndividuals, weights, out Fp_best).ToList();
+            reproduction = Solution(0, populationsOfIndividuals, weights, out Fp_best, E_pogr).ToList();
 
             // Вывод нужной особи и удаление лишних файлов
             System.Console.WriteLine("Решение первоначальное");
@@ -151,7 +160,7 @@ namespace GravityExploration
                 populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0], in reproduction).ToList();
 
                 // Решение прямой задачи для полученных особей
-                reproduction = Solution(1, populationsOfIndividuals, weights, out Fp_best).ToList();
+                reproduction = Solution(1, populationsOfIndividuals, weights, out Fp_best, E_pogr).ToList();
 
                 // Замена слабых особей из нового поколения на сильных особей нового поколения
                 double weightMax = weights.Max();
@@ -194,7 +203,7 @@ namespace GravityExploration
             OutputGraphs(populationsOfIndividuals[0].Count - 1);
         }
 
-        private static List<double> Solution(int i, List<Generation>[] populationsOfIndividuals, List<double> weights, out double Fp_best)
+        private static List<double> Solution(int i, List<Generation>[] populationsOfIndividuals, List<double> weights, out double Fp_best, double E_pogr)
         {
             int q = 0;
             foreach (var pop in populationsOfIndividuals[i])
@@ -203,7 +212,7 @@ namespace GravityExploration
                 DirectProblem back = new(q, pop);
                 back.Decision();
 
-                pop.GetFunctional(GeneralData.trueReadings);
+                pop.GetFunctional(GeneralData.trueReadings, E_pogr);
                 q++;
 
                 Console.Write("Функционал: ");
@@ -378,7 +387,12 @@ namespace GravityExploration
                 System.Console.WriteLine("Особь: {0} <-> {1}", _item1, _item2);
 
                 Random rdObjCount = new();              // Рандом для получения количества объектов особей для замен
-                int objCount = rdObjCount.Next(1, individuals[0].individual.Count + 1);
+                int objTemp;
+                if (individuals[_item1].individual.Count >= individuals[_item2].individual.Count)
+                    objTemp = individuals[_item1].individual.Count;
+                else
+                    objTemp = individuals[_item2].individual.Count;
+                int objCount = rdObjCount.Next(1, objTemp + 1);
 
                 List<Tuple<int, int>> objPairs = new();
                 bool objRepeat = true;
@@ -525,8 +539,8 @@ namespace GravityExploration
                     }
                 }
                 Random rd = new();
-                //arr[arr.Length - 1] = Convert.ToString(rd.Next(2000, 4000));
-                arr[arr.Length - 1] = "3000";
+                arr[arr.Length - 1] = Convert.ToString(rd.Next(2500, 3500));
+                //arr[arr.Length - 1] = "3000";
                 primaryGeneration.Add(arr);
             }
 

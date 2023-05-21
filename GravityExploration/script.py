@@ -1,5 +1,7 @@
+from matplotlib.ticker import LinearLocator
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.widgets import Button
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection, Line3DCollection
 import matplotlib.pyplot as plt
 
@@ -21,10 +23,12 @@ with open("output" + number + ".txt", "r") as f:
 xf=list(map(float, xf.split(' ')))
 yf=list(map(float, yf.split(' ')))
 
-fig = plt.figure(figsize=(6, 9.5))
+fig = plt.figure(figsize=(12, 8))
+fig.suptitle('Graph ' + number)
+fig.subplots_adjust(top=0.9, bottom=0.05)
 
 # plot "Underground"
-ax1 = fig.add_subplot(212, projection='3d')
+ax1 = fig.add_subplot(234, projection='3d')
 
 xgrid, ygrid = np.meshgrid(xf, yf)
 zgrid = xgrid * xgrid * 0
@@ -64,20 +68,66 @@ ax1.set_ylabel('Y')
 ax1.set_zlabel('Z')
 
 # plot "Sensor readings"
-ax2 = fig.add_subplot(211, projection='3d')
+ax2 = fig.add_subplot(231, projection='3d')
+
 ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
-ax2.set_zlabel('Z')
 
 xgrid, ygrid = np.meshgrid(xf, yf)
-
 zgrid = np.array(res_arr)
-
 surf = ax2.plot_surface(xgrid, ygrid, zgrid, cmap = 'gnuplot2')
-fig.colorbar(surf, ax=ax2)
+ax2.zaxis.set_major_locator(LinearLocator(5))
+ax2.set_aspect('equalxy')
 
-ax1.axis("equal")
+# ax1.axis("equal")
+ax1.set_aspect('equal')
 
-plt.title('Graph ' + number)
+y_index = 0
+ax3 = fig.add_subplot(233)
+fig.colorbar(surf,  ax=ax3)
+
+l, = ax3.plot(xf, zgrid[y_index], lw=2)
+ax3.set_title(ygrid[y_index][0])
+
+class Index:
+    ind = 0
+
+    def next(self, event):
+        self.ind += 1
+        i = self.ind % len(zgrid)
+        ydata = zgrid[i]
+        l.set_ydata(ydata)
+        ax3.set_title(ygrid[i][0])
+        plt.draw()
+
+    def prev(self, event):
+        self.ind -= 1
+        i = self.ind % len(zgrid)
+        ydata = zgrid[i]
+        l.set_ydata(ydata)
+        ax3.set_title(ygrid[i][0])
+        plt.draw()
+
+callback = Index()
+axprev = fig.add_axes([0.7, 0.05, 0.1, 0.075])
+axnext = fig.add_axes([0.81, 0.05, 0.1, 0.075])
+bnext = Button(axnext, 'Next')
+bnext.on_clicked(callback.next)
+bprev = Button(axprev, 'Previous')
+bprev.on_clicked(callback.prev)
+
+arr = np.array(zgrid)
+maxarr = []
+minarr = []
+
+for i in arr:
+    maxarr.append(max(i))
+    minarr.append(min(i))
+max_number = max(maxarr)
+min_number = min(minarr)
+
+ax3.set_ylim(top=max_number)  # adjust the top leaving bottom unchanged
+ax3.set_ylim(bottom=min_number)  # adjust the bottom leaving top unchanged
+
 plt.subplots_adjust(wspace=0, hspace=0)
 plt.show()
