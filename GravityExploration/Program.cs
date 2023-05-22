@@ -57,12 +57,12 @@ namespace GravityExploration
         {
             // Входные данные
             int objectsNums;                                    // Количество объектов у особи
-            int individualsNums = 50;                           // Количество особей
+            int individualsNums = 25;                           // Количество особей
             double xs = -5, xe = 5;                             // Границы сетки по OX
             double ys = -5, ye = 5;                             // Границы сетки по OY
 
             // Условия для обратной задачи
-            double Eps = 0.3;                                   // Точность
+            double Eps = 0.1;                                   // Точность
             int MaxP = 1000;                                    // Максимальное количество итераций
             double Fp_best = 1;                                 // Лучшее значение
             int p = 1;                                          // Итерация
@@ -120,7 +120,7 @@ namespace GravityExploration
             populationsOfIndividuals[0] = tempPopulation.ToList();
 
             // Получение решения для первоначальных особей
-            reproduction = Solution(0, populationsOfIndividuals, weights, out Fp_best, E_pogr).ToList();
+            reproduction = Solution(0, ref populationsOfIndividuals, weights, out Fp_best, E_pogr).ToList();
 
             // Вывод нужной особи и удаление лишних файлов
             System.Console.WriteLine("Решение первоначальное");
@@ -159,8 +159,11 @@ namespace GravityExploration
                 // Операция кроссинговера для получения новых особей
                 populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0], in reproduction).ToList();
 
+                // Мутация
+                Mutation(xs, ye, ref populationsOfIndividuals);
+
                 // Решение прямой задачи для полученных особей
-                reproduction = Solution(1, populationsOfIndividuals, weights, out Fp_best, E_pogr).ToList();
+                reproduction = Solution(1, ref populationsOfIndividuals, weights, out Fp_best, E_pogr).ToList();
 
                 // Замена слабых особей из нового поколения на сильных особей нового поколения
                 double weightMax = weights.Max();
@@ -170,7 +173,6 @@ namespace GravityExploration
                 Console.WriteLine("strongIndividual = " + strongIndividual);
                 Console.WriteLine("weakIndividual = " + weakIndividual);
 
-#if true
                 if (weightMax > weightMin)
                 {
                     Console.WriteLine(" Заменена особь {0} на {1}", weakIndividual, strongIndividual);
@@ -178,12 +180,7 @@ namespace GravityExploration
                     Generation temp = populationsOfIndividuals[1][weakIndividual];
                     populationsOfIndividuals[1][weakIndividual] = populationsOfIndividuals[0][strongIndividual];
                     populationsOfIndividuals[0][strongIndividual] = temp;
-                }
-#endif
-
-                foreach (var item in weights)
-                    Console.WriteLine("\t" + item);
-                Console.WriteLine();
+                }                
 
                 populationsOfIndividuals[0] = populationsOfIndividuals[1].ToList();
                 populationsOfIndividuals[1].Clear();
@@ -203,7 +200,44 @@ namespace GravityExploration
             OutputGraphs(populationsOfIndividuals[0].Count - 1);
         }
 
-        private static List<double> Solution(int i, List<Generation>[] populationsOfIndividuals, List<double> weights, out double Fp_best, double E_pogr)
+        private static void Mutation(double xs, double ye, ref List<Generation>[] populationsOfIndividuals)
+        {
+            for (int i = 0; i < populationsOfIndividuals[1].Count; i++)
+            {
+                Random rdMutation = new();
+                Random rdIndex = new();
+                Random rdIndexObjCount = new();
+
+                double mutation = rdMutation.NextDouble();
+                if (mutation <= 0.05)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Мутация: особь {0}", i);
+                    Console.ResetColor();
+
+                    int count = rdIndexObjCount.Next(1, populationsOfIndividuals[1][i].individual.Count + 1);
+                    for (int j = 0; j < count; j++)
+                    {
+                        populationsOfIndividuals[1][i].individual[j].SetToList();
+                        int index = rdIndex.Next(0, 6);
+                        double param;
+                        if (index < 2 && index >= 0)
+                        {
+                            param = RandomDoubleInRange(xs, ye);
+                            populationsOfIndividuals[1][i].individual[j].Params[index] = param;
+                        }
+                        else if (index < 5 && index > 2)
+                        {
+                            param = RandomDoubleInRange(1, ye);
+                            populationsOfIndividuals[1][i].individual[j].Params[index] = param;
+                        }
+                        populationsOfIndividuals[1][i].individual[j].GetFromList();
+                    }
+                }
+            }
+        }
+
+        private static List<double> Solution(int i, ref List<Generation>[] populationsOfIndividuals, List<double> weights, out double Fp_best, double E_pogr)
         {
             int q = 0;
             foreach (var pop in populationsOfIndividuals[i])
@@ -237,7 +271,6 @@ namespace GravityExploration
                     Console.Write("{0:F3} ", func);
             }
             Console.WriteLine();
-
 
             Console.Write("Лучшая особь ");
             Console.ForegroundColor = ConsoleColor.Yellow;
@@ -544,13 +577,13 @@ namespace GravityExploration
                 primaryGeneration.Add(arr);
             }
 
-            static double RandomDoubleInRange(double minValue, double maxValue)
-            {
-                Random rand = new();
-                return minValue + rand.NextDouble() * (maxValue - minValue);
-            }   
-
             return primaryGeneration;
+        }
+
+        private static double RandomDoubleInRange(double minValue, double maxValue)
+        {
+            Random rand = new();
+            return minValue + rand.NextDouble() * (maxValue - minValue);
         }
 
         private static List<Strata> AddGeneration(List<string[]> _units)
