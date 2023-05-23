@@ -51,7 +51,7 @@ namespace GravityExploration
                 StepY = Params[4];
                 StepZ = Params[5];
                 Density = Params[6];
-                SetToList();
+                //SetToList();
             }
         }
     }

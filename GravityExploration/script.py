@@ -126,8 +126,8 @@ for i in arr:
 max_number = max(maxarr)
 min_number = min(minarr)
 
-ax3.set_ylim(top=max_number)  # adjust the top leaving bottom unchanged
-ax3.set_ylim(bottom=min_number)  # adjust the bottom leaving top unchanged
+ax3.set_ylim(top=max_number)
+ax3.set_ylim(bottom=min_number)
 
 plt.subplots_adjust(wspace=0, hspace=0)
 plt.show()
