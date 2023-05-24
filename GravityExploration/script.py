@@ -23,7 +23,7 @@ with open("output" + number + ".txt", "r") as f:
 xf=list(map(float, xf.split(' ')))
 yf=list(map(float, yf.split(' ')))
 
-fig = plt.figure(figsize=(12, 8))
+fig = plt.figure(figsize=(11, 9))
 fig.suptitle('Graph ' + number)
 fig.subplots_adjust(top=0.9, bottom=0.05)
 
@@ -49,7 +49,6 @@ for i in range(int(nums)):
         Z[i,:] = np.dot(points[i,:], 1)
 
     # plot vertices
-    #ax.axis('equal')
     ax1.scatter(Z[:, 0], Z[:, 1], Z[:, 2])
 
     # list of sides' polygons of figure
@@ -82,9 +81,10 @@ ax2.set_aspect('equalxy')
 # ax1.axis("equal")
 ax1.set_aspect('equal')
 
+# small graph
 y_index = 0
 ax3 = fig.add_subplot(233)
-fig.colorbar(surf,  ax=ax3)
+fig.colorbar(surf, ax=ax3)
 
 l, = ax3.plot(xf, zgrid[y_index], lw=2)
 ax3.set_title(ygrid[y_index][0])
@@ -97,6 +97,7 @@ class Index:
         i = self.ind % len(zgrid)
         ydata = zgrid[i]
         l.set_ydata(ydata)
+        down_grahp(xgrid[0][i])
         ax3.set_title(ygrid[i][0])
         plt.draw()
 
@@ -105,12 +106,13 @@ class Index:
         i = self.ind % len(zgrid)
         ydata = zgrid[i]
         l.set_ydata(ydata)
+        down_grahp(xgrid[0][i])
         ax3.set_title(ygrid[i][0])
         plt.draw()
 
 callback = Index()
-axprev = fig.add_axes([0.7, 0.05, 0.1, 0.075])
-axnext = fig.add_axes([0.81, 0.05, 0.1, 0.075])
+axprev = fig.add_axes([0.45, 0.005, 0.06, 0.05])
+axnext = fig.add_axes([0.52, 0.005, 0.06, 0.05])
 bnext = Button(axnext, 'Next')
 bnext.on_clicked(callback.next)
 bprev = Button(axprev, 'Previous')
@@ -128,6 +130,26 @@ min_number = min(minarr)
 
 ax3.set_ylim(top=max_number)
 ax3.set_ylim(bottom=min_number)
+
+
+# plot "small obj"
+def down_grahp (index):
+    ax4.clear()
+    ax4.grid ( axis='x' )
+    ax4.grid ( axis='y' )
+    ax4.set_aspect('equal')
+    min_value = 0
+    ax4.plot(np.linspace(xgrid[0][0], xgrid[0][len(xgrid[0])-1]), 0 * np.linspace(xgrid[0][0], xgrid[0][len(xgrid[0])-1]), lw=3, color='k')
+    for i in range(int(nums)):
+        if min_value > units[i][4]:
+            min_value = units[i][4]
+        if units[i][2] <= index and index <= units[i][3]:
+            ax4.fill_between(np.linspace(units[i][0], units[i][1]), units[i][4], units[i][5])
+    ax4.set_xlim([xgrid[0][0] * 1.5, xgrid[0][len(xgrid[0])-1] * 1.5])
+    ax4.set_ylim([min_value *1.5, 2])
+
+ax4 = fig.add_subplot(236)
+down_grahp(xgrid[0][0])
 
 plt.subplots_adjust(wspace=0, hspace=0)
 plt.show()
