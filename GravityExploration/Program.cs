@@ -63,8 +63,9 @@ namespace GravityExploration
             double ys = -5, ye = 5;                             // Границы сетки по OY
 
             // Условия для обратной задачи
-            double mutationPercent = 0.03;                      // Процент мутации
-            double Eps = 0.2;                                   // Точность
+            double mutationPercent = 0.05;                      // Процент мутации
+            double SwapOldIndividualPercent = 0.7;              // Процент замены новой особи на старую
+            double Eps = 0.15;                                  // Точность
             int MaxP = 1000;                                    // Максимальное количество итераций
             double Fp_best = 1;                                 // Лучшее значение
             int p = 1;                                          // Итерация
@@ -144,14 +145,16 @@ namespace GravityExploration
                 List<int> strongIndividuals = new();
                 strongWeights.Sort();
 
-                int replacementPercent = (int)Math.Ceiling((double)weights.Count * 0.1);
+                int replacementCount = (int)Math.Ceiling((double)weights.Count * 0.1);
 
-                for (int i = 0; i < replacementPercent; i++)
+                for (int i = 0; i < replacementCount; i++)
                 {
                     strongIndividuals.Add(weights.IndexOf(strongWeights[i]));
                 }
 
-                Console.WriteLine("individual: {0}\tfunctional: {1}", strongIndividuals[0], strongWeights[0]);
+                Console.ForegroundColor = ConsoleColor.DarkCyan;
+                Console.WriteLine("Лучшая особь: {0}\tФункционал: {1}\n", strongIndividuals[0], strongWeights[0]);
+                Console.ResetColor();
 
                 weights.Clear();
 
@@ -173,15 +176,16 @@ namespace GravityExploration
                 DeleteFiles();
 
                 // Операция кроссинговера для получения новых особей
+                Console.WriteLine("\tКроссинговер");
                 populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0], in reproduction).ToList();
+
+                // Решение прямой задачи для полученных особей
+                reproduction = Solution(1, ref populationsOfIndividuals, weights, out Fp_best, E_pogr);
 
                 // Мутация
 #if true
                 Mutation(xs, ye, mutationPercent, ref populationsOfIndividuals);
 #endif
-
-                // Решение прямой задачи для полученных особей
-                reproduction = Solution(1, ref populationsOfIndividuals, weights, out Fp_best, E_pogr);
 
                 //double weightMax = weights.Max();
                 //int weakIndividual = weights.IndexOf(weightMax);
@@ -190,25 +194,39 @@ namespace GravityExploration
                 //Console.WriteLine("сильная особь = " + strongIndividual);
                 //Console.WriteLine("слабая особь = " + weakIndividual);
 
+                // Добавление ещё одной СЛУЧАЙНОЙ особи
+#if true
+                if ((weights.Max() - weights.Min()) < 1e-3)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.WriteLine("Добавлена новая особь");
+                    Console.ResetColor();
+                    AddIndividual(populationsOfIndividuals, xs, xe, ys, ye);
+                }
+#endif
+
                 List<double> weakWeights = new(weights);
                 List<int> weakIndividuals = new();
                 weakWeights.Sort();
                 weakWeights.Reverse();
 
-                for (int i = 0; i < replacementPercent; i++)
+                for (int i = 0; i < replacementCount; i++)
                 {
                     weakIndividuals.Add(weights.IndexOf(weakWeights[i]));
                 }
 
-                // Замена слабых особей из нового поколения на сильных особей нового поколения
+                // Замена слабых особей из нового поколения на сильных особей прошлого поколения
 #if true
-                for (int i = 0; i < replacementPercent; i++)
-                {                    
-                    if (strongWeights[i] < weakWeights[i])
-                    {
-                        ReplacementByFunctionality(weakIndividuals[i], strongIndividuals[i]);
+                Random rdSwapOldIndividual = new();
+                double percent = rdSwapOldIndividual.NextDouble();
+                if (percent <= SwapOldIndividualPercent)
+                    for (int i = 0; i < replacementCount; i++)
+                    {                    
+                        if (strongWeights[i] < weakWeights[i]) //strongWeights[i] < weakWeights[i]
+                        {
+                            ReplacementByFunctionality(weakIndividuals[i], strongIndividuals[i]);
+                        }
                     }
-                }
 #endif
 
                 strongIndividuals.Clear();
@@ -231,7 +249,7 @@ namespace GravityExploration
                 void ReplacementByFunctionality(int weakIndividual, int strongIndividual)
                 {
                     Console.ForegroundColor = ConsoleColor.DarkGreen;
-                    Console.WriteLine(" Заменена особь {0} на {1}", weakIndividual, strongIndividual);
+                    Console.WriteLine("Заменена особь {0} на {1}", weakIndividual, strongIndividual);
                     Console.ResetColor();
 
                     (populationsOfIndividuals[1][weakIndividual], populationsOfIndividuals[0][strongIndividual]) = (populationsOfIndividuals[0][strongIndividual], populationsOfIndividuals[1][weakIndividual]);
@@ -247,6 +265,13 @@ namespace GravityExploration
             OutputGraphs(populationsOfIndividuals[0].Count - 1);
         }
 
+        private static void AddIndividual(List<Generation>[] populationsOfIndividuals, double xs, double xe, double ys, double ye)
+        {
+            List<string[]> _unit = SetPrimaryGeneration(1, xs, xe, ys, ye);
+            Generation _generation = new(AddGeneration(_unit));
+            populationsOfIndividuals[1].Add(_generation);
+        }
+
         private static void Mutation(double xs, double ye, double mutationPercent, ref List<Generation>[] populationsOfIndividuals)
         {
             for (int i = 0; i < populationsOfIndividuals[1].Count; i++)
@@ -258,7 +283,7 @@ namespace GravityExploration
                 double mutation = rdMutation.NextDouble();
                 if (mutation <= mutationPercent)
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
                     Console.WriteLine("Мутация: особь {0}", i);
                     Console.ResetColor();
 
@@ -280,7 +305,7 @@ namespace GravityExploration
                         }
                         else
                         {
-                            Console.ForegroundColor = ConsoleColor.Magenta;
+                            Console.ForegroundColor = ConsoleColor.DarkMagenta;
                             Console.WriteLine("Мутация не удалась");
                             Console.ResetColor();
                         }
