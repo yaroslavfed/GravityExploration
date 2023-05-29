@@ -7,15 +7,14 @@ namespace GravityExploration
     internal class DirectProblem
     {
         private readonly int number;
-        private List<double> functional = new();
         private readonly List<Strata> Generation = new();
-        private readonly List<List<double>> Z = new();
+        public List<List<double>> Z = new();
 
         public DirectProblem(int number, Generation _generation)
         {
             this.number = number;
-            this.Generation = _generation.individual;
-            this.Z = _generation.data;
+            Generation = _generation.individual;
+            Z = _generation.data;
         }
 
         public void Decision()
@@ -193,8 +192,6 @@ namespace GravityExploration
             string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "output" + number + ".txt");
             using (StreamWriter sw = new(outputPath, false))
             {
-                //sw.WriteLine(number);
-
                 // Вывод дробленной фигуры
 #if false
                 sw.WriteLine(Pieces.Count);

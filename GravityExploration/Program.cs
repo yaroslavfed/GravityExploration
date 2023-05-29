@@ -7,68 +7,23 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GravityExploration
 {
-    class GeneralData
-    {
-        // Константы
-        public static readonly double G = 6.672e-8;
-        public static readonly double SoilDensity = 2600;
-
-        // Входные данные для обратной задачи (сетка датчиков и их показания)
-        public static readonly List<double> X = new();
-        public static readonly List<double> Y = new();
-        public static List<List<double>> trueReadings = new();
-    }
-
-    public class Generation
-    {
-        public Generation(List<Strata> individual)
-        {
-            this.individual = individual;
-        }
-
-        public List<Strata> individual = new();
-        public List<List<double>> data = new();
-        public double Functional { get; private set; }
-
-        public void GetFunctional(List<List<double>> trueReadings, double E_pogr)
-        {
-            if (trueReadings is not null)
-            {
-                int n = trueReadings.Count * trueReadings[0].Count;
-                double w;
-                for (int i = 0; i < data.Count; i++)
-                {
-                    for (int j = 0; j < data[i].Count; j++)
-                    {
-                        if (Math.Abs(trueReadings[i][j]) < Math.Abs(E_pogr))
-                            w = 1 / Math.Abs(E_pogr);
-                        else
-                            w = 1 / Math.Abs(trueReadings[i][j]);
-                        Functional += Math.Pow(w * (data[i][j] - trueReadings[i][j]), 2);
-                    }
-                }
-                Functional /= n;
-            }
-        }
-    }
-
     internal class Program
     {
         static void Main(string[] args)
         {
             // Входные данные
             int objectsNums;                                    // Количество объектов у особи
-            int individualsNums = 10;                           // Количество особей
-            double xs = -5, xe = 5;                             // Границы сетки по OX
-            double ys = -5, ye = 5;                             // Границы сетки по OY
+            int individualsNums = 5;                            // Количество особей
+            double xs = -2, xe = 2;                             // Границы сетки по OX
+            double ys = -2, ye = 2;                             // Границы сетки по OY
 
             // Условия для обратной задачи
-            double mutationPercent = 0.05;                      // Процент мутации
-            double SwapOldIndividualPercent = 0.7;              // Процент замены новой особи на старую
-            double Eps = 0.15;                                  // Точность
+            double mutationPercent = 0.05;                       // Процент мутации
+            double SwapOldIndividualPercent = 0.6;                // Процент замены новой особи на старую
+            double Eps = 0.15;                                   // Точность
             int MaxP = 1000;                                    // Максимальное количество итераций
             double Fp_best = 1;                                 // Лучшее значение
-            int p = 1;                                          // Итерация
+            int p = 0;                                          // Итерация
 
             List<string[]> _units;                              // Задание параметров для объектов особи
             List<double> weights = new();
@@ -85,30 +40,27 @@ namespace GravityExploration
             }
             #endregion Receivers
 
-            // Подготовка к решению обратной задачи (прямая задача)
+            // Подготовка к решению обратной задачи (прямая задача для подготовки экспериментальных данных)
             // Получение значений аномалии по ЗАРАНЕЕ ЗАДАННЫМ объектам
-            // Подготовка эсперементальных данных
-
             string DataPath = Path.Combine(Directory.GetCurrentDirectory(), "Data.txt");
-
             _units = ReadFile(DataPath);
 
             Generation _experimentalGeneration = new(AddGeneration(_units));
             DirectProblem forward = new(-1, _experimentalGeneration);
             forward.Decision();
-            GeneralData.trueReadings = _experimentalGeneration.data.ToList();
+            GeneralData.trueReadings = _experimentalGeneration.data;
 
             // Расчет порогового значения Eps
-            List<double>? tempEps = new List<double>();
+            List<double>? tempEps = new();
             foreach (var list in GeneralData.trueReadings)
             {
                 tempEps.Add(list.Max());
             }
-            double E_pogr = tempEps.Max() / 100.0;
+            double E_pogr = tempEps.Max() * 1e-2;
 
             // Решение обратной задачи
             // Массив особей для обратной задачи
-            List<Generation>[] populationsOfIndividuals = new List<Generation>[2];
+            List<List<Generation>> populationsOfIndividuals = new();
 
             // Генерация случайных особей (первоначальное поколение)
             List<Generation> tempPopulation = new();
@@ -120,14 +72,16 @@ namespace GravityExploration
                 Generation _generation = new(AddGeneration(_units));
                 tempPopulation.Add(_generation);
             }
-            populationsOfIndividuals[0] = tempPopulation.ToList();
 
             // Получение решения для первоначальных особей
-            reproduction = Solution(0, ref populationsOfIndividuals, weights, out Fp_best, E_pogr).ToList();
+            reproduction = Solution(tempPopulation, weights, out Fp_best, E_pogr).ToList();
 
-            // Вывод нужной особи и удаление лишних файлов
+            // Запись в список популяции
+            populationsOfIndividuals.Add(tempPopulation);
+
+            // Вывод нужной особи
             System.Console.WriteLine("Решение первоначальное");
-            OutputGraphs(populationsOfIndividuals[0].Count-1);
+            OutputGraphs(populationsOfIndividuals[p].Count-1);
 
             // Решение обратной задачи
             while (true)
@@ -136,29 +90,15 @@ namespace GravityExploration
                 Console.WriteLine("\nПОКОЛЕНИЕ {0}", p);
                 Console.ResetColor();
 
-                //double weightMin = weights.Min();
-                //int strongIndividual = weights.IndexOf(weightMin);
-                //Console.WriteLine("weightMin = " + weightMin);
-                //Console.WriteLine("strongIndividual = " + strongIndividual);
-
-                List<double> strongWeights = new(weights);
-                List<int> strongIndividuals = new();
-                strongWeights.Sort();
-
-                int replacementCount = (int)Math.Ceiling((double)weights.Count * 0.1);
-
-                for (int i = 0; i < replacementCount; i++)
-                {
-                    strongIndividuals.Add(weights.IndexOf(strongWeights[i]));
-                }
-
-                Console.ForegroundColor = ConsoleColor.DarkCyan;
-                Console.WriteLine("Лучшая особь: {0}\tФункционал: {1}\n", strongIndividuals[0], strongWeights[0]);
-                Console.ResetColor();
-
+                double strongIndividual = weights.Min();
+                int strongIndividualIndex = weights.IndexOf(strongIndividual);
                 weights.Clear();
 
-                if(Fp_best <= Eps)
+                Console.ForegroundColor = ConsoleColor.DarkCyan;
+                Console.WriteLine("Лучшая особь: {0}\tФункционал: {1}\n", strongIndividualIndex, strongIndividual);
+                Console.ResetColor();
+
+                if (Fp_best <= Eps)
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("Достигнута искомая точность");
@@ -175,88 +115,114 @@ namespace GravityExploration
 
                 DeleteFiles();
 
-                // Операция кроссинговера для получения новых особей
-                Console.WriteLine("\tКроссинговер");
-                populationsOfIndividuals[1] = CrossingOver(populationsOfIndividuals[0], in reproduction).ToList();
 
-                // Решение прямой задачи для полученных особей
-                reproduction = Solution(1, ref populationsOfIndividuals, weights, out Fp_best, E_pogr);
+                // Операция кроссинговера для получения новых особей
+#if true
+                Console.WriteLine("\tКроссинговер");
+                List<Generation> temp = new(CrossingOver(populationsOfIndividuals[p], in reproduction));
+                List<Generation> newestPopulation = new();
+
+                foreach(var item in temp)
+                {
+                    Generation _generation = new(item.individual);
+                    newestPopulation.Add(_generation);
+                }
+
+                populationsOfIndividuals.Add(newestPopulation);
+#endif
+
 
                 // Мутация
 #if true
-                Mutation(xs, ye, mutationPercent, ref populationsOfIndividuals);
+                Mutation(xs, ye, mutationPercent, ref newestPopulation);
 #endif
 
-                //double weightMax = weights.Max();
-                //int weakIndividual = weights.IndexOf(weightMax);
-                //Console.WriteLine("минимальный функционал = " + weightMin);
-                //Console.WriteLine("максимальный функционал = " + weightMax);
-                //Console.WriteLine("сильная особь = " + strongIndividual);
-                //Console.WriteLine("слабая особь = " + weakIndividual);
+                // Решение прямой задачи для полученных особей
+                reproduction = Solution(newestPopulation, weights, out Fp_best, E_pogr).ToList();
+
+                // Добавление сильной особи из прошлого поколения
+                Generation newGeneration = new(populationsOfIndividuals[p][strongIndividualIndex].individual);
+                newestPopulation.Add(newGeneration);
+
+                // Удаление слабой особи из текущего поколения
+                double weakIndividual = weights.Max();
+                int weakIndividualIndex = weights.IndexOf(weakIndividual);
+                newestPopulation.Remove(newestPopulation[weakIndividualIndex]);
+
+                // Остановка для просмотра промежуточных особей
+#if false
+                Thread.Sleep(1000);
+                string? test = Console.ReadLine();
+                if (test == "test")
+                    OutputGraphs(newestPopulation.Count - 1);
+#endif
+
 
                 // Добавление ещё одной СЛУЧАЙНОЙ особи
-#if true
+#if false
                 if ((weights.Max() - weights.Min()) < 1e-3)
                 {
                     Console.ForegroundColor = ConsoleColor.DarkGreen;
                     Console.WriteLine("Добавлена новая особь");
                     Console.ResetColor();
-                    AddIndividual(populationsOfIndividuals, xs, xe, ys, ye);
+                    AddIndividual(newestPopulation, xs, xe, ys, ye);
                 }
 #endif
 
-                List<double> weakWeights = new(weights);
-                List<int> weakIndividuals = new();
-                weakWeights.Sort();
-                weakWeights.Reverse();
 
-                for (int i = 0; i < replacementCount; i++)
-                {
-                    weakIndividuals.Add(weights.IndexOf(weakWeights[i]));
-                }
-
-                // Замена слабых особей из нового поколения на сильных особей прошлого поколения
-#if true
+                // Замена слабых особей из нового поколения на сильных особей прошлого поколения (селекция)
+#if false
                 Random rdSwapOldIndividual = new();
                 double percent = rdSwapOldIndividual.NextDouble();
                 if (percent <= SwapOldIndividualPercent)
                     for (int i = 0; i < replacementCount; i++)
                     {                    
-                        if (strongWeights[i] < weakWeights[i]) //strongWeights[i] < weakWeights[i]
+                        if (strongWeights[i] < weakWeights[i])
                         {
-                            ReplacementByFunctionality(weakIndividuals[i], strongIndividuals[i]);
+                            ReplacementByFunctionality(p, newestPopulation, weakIndividuals[i], strongIndividuals[i]);
                         }
                     }
 #endif
 
-                strongIndividuals.Clear();
-                weakIndividuals.Clear();
+                if (p>0)
+                {
+                    populationsOfIndividuals[p - 1].Clear();
+                }
+
+                #region Comments
+                //foreach (var pop in populationsOfIndividuals)
+                //    foreach (var item in pop)
+                //    {
+                //        string outputPath = Path.Combine(Directory.GetCurrentDirectory(),"p=" + p + "_f=" + item.Functional + ".txt");
+                //        using (StreamWriter sw = new(outputPath, false))
+                //        {
+                //            sw.WriteLine(item.Functional);
+                //            foreach (var z in item.data)
+                //            {
+                //                foreach (var _z in z)
+                //                {
+                //                    sw.Write(_z + " ");
+                //                }
+                //                sw.WriteLine();
+                //            }
+                //        };
+                //    }
 
                 //(populationsOfIndividuals[0], populationsOfIndividuals[1]) = (populationsOfIndividuals[1], populationsOfIndividuals[0]);
-                populationsOfIndividuals[0].Clear();
-                populationsOfIndividuals[0] = populationsOfIndividuals[1].ToList();
-                populationsOfIndividuals[1].Clear();
+                //populationsOfIndividuals[0].Clear();
+                //populationsOfIndividuals[0] = populationsOfIndividuals[1].ToList();
+                //populationsOfIndividuals[1].Clear();
+                #endregion
 
                 p++;
 
-#if false
-                Thread.Sleep(1000);
-                string? test = Console.ReadLine();
-                if (test == "test")
-                    OutputGraphs(populationsOfIndividuals[0].Count - 1);
-#endif
-
-                void ReplacementByFunctionality(int weakIndividual, int strongIndividual)
+                void ReplacementByFunctionality(int p, List<Generation> newestIndividual, int weakIndividual, int strongIndividual)
                 {
                     Console.ForegroundColor = ConsoleColor.DarkGreen;
                     Console.WriteLine("Заменена особь {0} на {1}", weakIndividual, strongIndividual);
                     Console.ResetColor();
 
-                    (populationsOfIndividuals[1][weakIndividual], populationsOfIndividuals[0][strongIndividual]) = (populationsOfIndividuals[0][strongIndividual], populationsOfIndividuals[1][weakIndividual]);
-
-                    //Generation temp = populationsOfIndividuals[1][weakIndividual];
-                    //populationsOfIndividuals[1][weakIndividual] = populationsOfIndividuals[0][strongIndividual];
-                    //populationsOfIndividuals[0][strongIndividual] = temp;
+                    (newestIndividual[weakIndividual], populationsOfIndividuals[p][strongIndividual]) = (populationsOfIndividuals[p][strongIndividual], newestIndividual[weakIndividual]);
                 }
             }
 
@@ -265,16 +231,16 @@ namespace GravityExploration
             OutputGraphs(populationsOfIndividuals[0].Count - 1);
         }
 
-        private static void AddIndividual(List<Generation>[] populationsOfIndividuals, double xs, double xe, double ys, double ye)
+        private static void AddIndividual(List<Generation> populationsOfIndividuals, double xs, double xe, double ys, double ye)
         {
             List<string[]> _unit = SetPrimaryGeneration(1, xs, xe, ys, ye);
             Generation _generation = new(AddGeneration(_unit));
-            populationsOfIndividuals[1].Add(_generation);
+            populationsOfIndividuals.Add(_generation);
         }
 
-        private static void Mutation(double xs, double ye, double mutationPercent, ref List<Generation>[] populationsOfIndividuals)
+        private static void Mutation(double xs, double ye, double mutationPercent, ref List<Generation> generation)
         {
-            for (int i = 0; i < populationsOfIndividuals[1].Count; i++)
+            for (int i = 0; i < generation.Count; i++)
             {
                 Random rdMutation = new();
                 Random rdIndex = new();
@@ -287,21 +253,21 @@ namespace GravityExploration
                     Console.WriteLine("Мутация: особь {0}", i);
                     Console.ResetColor();
 
-                    int count = rdIndexObjCount.Next(1, populationsOfIndividuals[1][i].individual.Count + 1);
+                    int count = rdIndexObjCount.Next(1, generation[i].individual.Count + 1);
                     for (int j = 0; j < count; j++)
                     {
-                        populationsOfIndividuals[1][i].individual[j].SetToList();
+                        generation[i].individual[j].SetToList();
                         int index = rdIndex.Next(0, 6);
                         double param;
                         if (index < 2 && index >= 0)
                         {
                             param = RandomDoubleInRange(xs, ye);
-                            populationsOfIndividuals[1][i].individual[j].Params[index] = param;
+                            generation[i].individual[j].Params[index] = param;
                         }
                         else if (index < 5 && index > 2)
                         {
                             param = rdIndex.NextDouble() * Math.Abs(xs);
-                            populationsOfIndividuals[1][i].individual[j].Params[index] = param;
+                            generation[i].individual[j].Params[index] = param;
                         }
                         else
                         {
@@ -310,22 +276,25 @@ namespace GravityExploration
                             Console.ResetColor();
                         }
                             
-                        populationsOfIndividuals[1][i].individual[j].GetFromList();
+                        generation[i].individual[j].GetFromList();
                     }
                 }
             }
         }
 
-        private static List<double> Solution(int i, ref List<Generation>[] populationsOfIndividuals, List<double> weights, out double Fp_best, double E_pogr)
+        private static List<double> Solution(List<Generation> generation, List<double> weights, out double Fp_best, double E_pogr)
         {
+            List<Generation> populationsOfIndividuals = new(generation);
             int q = 0;
-            foreach (var pop in populationsOfIndividuals[i])
+            foreach (var pop in populationsOfIndividuals)
             {
                 pop.data.Clear();
                 DirectProblem back = new(q, pop);
                 back.Decision();
+                
+                pop.data = back.Z;
 
-                pop.GetFunctional(GeneralData.trueReadings, E_pogr);
+                pop.GetFunctional(E_pogr);
                 q++;
 
                 Console.Write("Функционал: ");
@@ -389,7 +358,7 @@ namespace GravityExploration
                 reproduction.Add(item / functionalitySum);
             }
 
-            Console.WriteLine("\nВерятность выбора:");
+            Console.WriteLine("\nВероятность выбора:");
             foreach (var item in reproduction)
                 Console.Write(item + " ");
             Console.WriteLine();
@@ -564,9 +533,11 @@ namespace GravityExploration
                 //System.Console.WriteLine("\t\tПараметр: {0}", index);
                 //System.Console.WriteLine("\t\t\tЗамена: {0} <-> {1}", item1.Params[index], item2.Params[index]);
 
-                Init(item1);
-                Init(item2);
+                //Init(item1);
+                //Init(item2);
             }
+            item1.GetFromList();
+            item2.GetFromList();
 
             static void Init(Strata item)
             {
@@ -596,11 +567,11 @@ namespace GravityExploration
         {
             string catalog = Directory.GetCurrentDirectory();
             string fileName = "output*.txt";
-            foreach (string findedFile in Directory.EnumerateFiles(catalog, fileName, SearchOption.AllDirectories))
+            foreach (string fundedFile in Directory.EnumerateFiles(catalog, fileName, SearchOption.AllDirectories))
             {
                 try
                 {
-                    File.Delete(findedFile);
+                    File.Delete(fundedFile);
                 }
                 catch (Exception e)
                 {
@@ -608,6 +579,20 @@ namespace GravityExploration
                     break;
                 }
             }
+
+            //string fileName1 = "*f=*.txt";
+            //foreach (string fundedFile in Directory.EnumerateFiles(catalog, fileName1, SearchOption.AllDirectories))
+            //{
+            //    try
+            //    {
+            //        File.Delete(fundedFile);
+            //    }
+            //    catch (Exception e)
+            //    {
+            //        Console.WriteLine("The deletion failed: {0}", e.Message);
+            //        break;
+            //    }
+            //}
         }
 
         private static List<string[]> ReadFile(string path)
