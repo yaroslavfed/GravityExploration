@@ -18,10 +18,10 @@ namespace GravityExploration
         public Strata(List<double> unitParams)
         {
             CentreX = unitParams[0];
-            StepX = unitParams[1];
-            CentreY = unitParams[2];
-            StepY = unitParams[3];
-            CentreZ = unitParams[4];
+            CentreY = unitParams[1];
+            CentreZ = unitParams[2];
+            StepX = unitParams[3];
+            StepY = unitParams[4];
             StepZ = unitParams[5];
             Density = unitParams[6];
         }
