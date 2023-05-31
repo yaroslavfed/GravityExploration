@@ -47,6 +47,7 @@ namespace GravityExploration
             forward.Decision();
             GeneralData.trueReadings = _experimentalGeneration.data;
 
+            Console.WriteLine("Экспериментальные данные");
             OutputGraphs(1);
 
             // Расчет порогового значения Eps
@@ -75,10 +76,6 @@ namespace GravityExploration
             // Запись в список популяции
             populationsOfIndividuals.Add(tempPopulation);
 
-            // Вывод особей первоначального поколения
-            //System.Console.WriteLine("Решение первоначальное");
-            //OutputGraphs(populationsOfIndividuals[p].Count-1);
-
             // Решение обратной задачи
             for(p = 0; p < MaxP; p++)
             {
@@ -90,6 +87,14 @@ namespace GravityExploration
                 List<double> weights = new(Solution(populationsOfIndividuals[p], E_pogr));
                 Fp_best = weights.Min();
 
+                foreach (var item in populationsOfIndividuals[p])
+                    Console.WriteLine("Функционал: {0}", item.Functional);
+                if (p == 0)
+                {
+                    System.Console.WriteLine("\nСлучайная генерация");
+                    OutputGraphs(populationsOfIndividuals[0].Count - 1);
+                }
+
                 // Сохранение сильной особи из текущего поколения
                 double strongIndividual = weights.Min();
                 int strongIndividualIndex = weights.IndexOf(strongIndividual);
@@ -100,6 +105,7 @@ namespace GravityExploration
                 int weakIndividualIndex = weights.IndexOf(weakIndividual);
                 populationsOfIndividuals[p].Remove(populationsOfIndividuals[p][weakIndividualIndex]);
                 weights.Remove(weakIndividual);
+                Console.WriteLine("\nУдалена особь с наибольшим функционалом в поколении ({0})", weakIndividual);
 
                 foreach (var item in populationsOfIndividuals[p])
                     Console.WriteLine("Функционал: {0}", item.Functional);
@@ -483,7 +489,7 @@ namespace GravityExploration
 
         private static void OutputGraphs(int indCount)
         {
-            Console.WriteLine("Введите номер особи из {0}: ", indCount);
+            Console.WriteLine("Введите номер особи из {0} или next для продолжения: ", indCount);
             while (true)
             {
                 string? a = Console.ReadLine();
