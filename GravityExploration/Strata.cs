@@ -15,6 +15,17 @@ namespace GravityExploration
             Density = double.Parse(_units[i][6]);
         }
 
+        public Strata(List<double> unitParams)
+        {
+            CentreX = unitParams[0];
+            StepX = unitParams[1];
+            CentreY = unitParams[2];
+            StepY = unitParams[3];
+            CentreZ = unitParams[4];
+            StepZ = unitParams[5];
+            Density = unitParams[6];
+        }
+
         public double CentreZ { get; private set; }     // Начальная координата Z
         public double StepZ { get; private set; }      // Конечная координата Z
         public double CentreX { get; private set; }     // Начальная координата X
@@ -51,7 +62,6 @@ namespace GravityExploration
                 StepY = Params[4];
                 StepZ = Params[5];
                 Density = Params[6];
-                //SetToList();
             }
         }
     }
