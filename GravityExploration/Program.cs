@@ -19,7 +19,7 @@ namespace GravityExploration
 
             // Условия для обратной задачи
             double mutationPercent = 0.05;                      // Процент мутации
-            double Eps = 0.2;                                  // Точность
+            double Eps = 0.05;                                  // Точность
             int MaxP = 1000;                                    // Максимальное количество итераций
             double Fp_best = 1;                                 // Лучшее значение
             int p;                                              // Итерация (номер поколения)
