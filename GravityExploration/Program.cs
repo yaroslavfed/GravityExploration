@@ -18,8 +18,8 @@ namespace GravityExploration
             double ys = -5, ye = 5;                             // Границы сетки по OY
 
             // Условия для обратной задачи
-            double mutationPercent = 0.05;                      // Процент мутации
-            double Eps = 0.05;                                  // Точность
+            double mutationPercent = 0.07;                      // Процент мутации
+            double Eps = 0.1;                                  // Точность
             int MaxP = 1000;                                    // Максимальное количество итераций
             double Fp_best = 1;                                 // Лучшее значение
             int p;                                              // Итерация (номер поколения)
@@ -83,12 +83,15 @@ namespace GravityExploration
                 Console.WriteLine("\nПОКОЛЕНИЕ {0}", p);
                 Console.ResetColor();
 
+                //for (int i = 0; i < populationsOfIndividuals[p].Count; i++)
+                //    DeleteFiles(i);
+
                 // Решение прямой задачи для особей текущего поколения и расчет функционалов
                 List<double> weights = new(Solution(populationsOfIndividuals[p], E_pogr));
-                Fp_best = weights.Min();
 
                 foreach (var item in populationsOfIndividuals[p])
                     Console.WriteLine("Функционал: {0}", item.Functional);
+
                 if (p == 0)
                 {
                     System.Console.WriteLine("\nСлучайная генерация");
@@ -105,12 +108,19 @@ namespace GravityExploration
                 int weakIndividualIndex = weights.IndexOf(weakIndividual);
                 populationsOfIndividuals[p].Remove(populationsOfIndividuals[p][weakIndividualIndex]);
                 weights.Remove(weakIndividual);
+                DeleteFiles(weakIndividualIndex);
                 Console.WriteLine("\nУдалена особь с наибольшим функционалом в поколении ({0})", weakIndividual);
 
                 foreach (var item in populationsOfIndividuals[p])
                     Console.WriteLine("Функционал: {0}", item.Functional);
 
                 List<double> reproduction = new(GetReproduction(weights));
+                Fp_best = weights.Min();
+
+                Console.WriteLine("Приспособленность:");
+                foreach (var item in reproduction)
+                    Console.WriteLine(item);
+                Console.WriteLine("Лучший функционал: {0}", Fp_best);
 
                 Console.ForegroundColor = ConsoleColor.DarkCyan;
                 Console.WriteLine("Лучшая особь: {0}\tФункционал: {1}\n", strongIndividualIndex, strongIndividual);
@@ -165,20 +175,6 @@ namespace GravityExploration
                 }
 #endif
 
-                // Замена слабых особей из нового поколения на сильных особей прошлого поколения (селекция)
-#if false
-                Random rdSwapOldIndividual = new();
-                double percent = rdSwapOldIndividual.NextDouble();
-                if (percent <= SwapOldIndividualPercent)
-                    for (int i = 0; i < replacementCount; i++)
-                    {                    
-                        if (strongWeights[i] < weakWeights[i])
-                        {
-                            ReplacementByFunctionality(p, newestPopulation, weakIndividuals[i], strongIndividuals[i]);
-                        }
-                    }
-#endif
-
                 // Запись полученного в новое поколение
                 populationsOfIndividuals.Add(newestPopulation);
 
@@ -224,12 +220,12 @@ namespace GravityExploration
             return tempListStrata;
         }
 
-        //private static void AddIndividual(List<Generation> populationsOfIndividuals, double xs, double xe, double ys, double ye)
-        //{
-        //    List<string[]> _unit = SetPrimaryGeneration(1, xs, xe, ys, ye);
-        //    Generation _generation = new(AddGeneration(_unit));
-        //    populationsOfIndividuals.Add(_generation);
-        //}
+        private static void AddIndividual(List<Generation> populationsOfIndividuals, double xs, double xe, double ys, double ye)
+        {
+            List<string[]> _unit = SetPrimaryGeneration(1, xs, xe, ys, ye);
+            Generation _generation = new(AddGeneration(_unit));
+            populationsOfIndividuals.Add(_generation);
+        }
 
         private static void Mutation(double xs, double ye, double mutationPercent, ref List<Generation> generation)
         {
@@ -505,10 +501,10 @@ namespace GravityExploration
             }
         }
 
-        private static void DeleteFiles()
+        private static void DeleteFiles(int num)
         {
             string catalog = Directory.GetCurrentDirectory();
-            string fileName = "output*.txt";
+            string fileName = "output" + num + ".txt";
             foreach (string fundedFile in Directory.EnumerateFiles(catalog, fileName, SearchOption.AllDirectories))
             {
                 try
