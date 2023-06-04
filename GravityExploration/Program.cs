@@ -185,7 +185,7 @@ namespace GravityExploration
                 newestPopulation.Add(tempListStrata);
 
                 // Остановка для просмотра промежуточных особей
-#if false
+#if true
                 Thread.Sleep(1000);
                 string? test = Console.ReadLine();
                 if (test == "test")
