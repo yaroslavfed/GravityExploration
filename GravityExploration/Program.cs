@@ -105,14 +105,22 @@ namespace GravityExploration
                 // Решение прямой задачи для особей текущего поколения и расчет функционалов
                 List<double> weights = new(Solution(populationsOfIndividuals[p], E_pogr));
 
+#if false
                 foreach (var item in populationsOfIndividuals[p])
-                    Console.WriteLine("Функционал: {0}", item.Functional);
+                    Console.WriteLine("\tФункционал: {0}", item.Functional);
+#endif
 
                 if (p == 0)
                 {
-                    System.Console.WriteLine("\nСлучайная генерация");
+                    System.Console.WriteLine("Случайная генерация:");
+                    foreach (var item in populationsOfIndividuals[p])
+                        Console.WriteLine("\tФункционал: {0}", item.Functional);
                     OutputGraphs(populationsOfIndividuals[0].Count - 1);
                 }
+
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine("\nAvg = {0}", CalculationAvg(weights));
+                Console.ResetColor();
 
                 // Сохранение сильной особи из текущего поколения
                 double strongIndividual = weights.Min();
@@ -125,18 +133,22 @@ namespace GravityExploration
                 populationsOfIndividuals[p].Remove(populationsOfIndividuals[p][weakIndividualIndex]);
                 weights.Remove(weakIndividual);
                 DeleteFiles(weakIndividualIndex);
-                Console.WriteLine("\nУдалена особь с наибольшим функционалом в поколении ({0})", weakIndividual);
 
+#if false
+                Console.WriteLine("\nУдалена особь с наибольшим функционалом в поколении ({0})", weakIndividual);
                 foreach (var item in populationsOfIndividuals[p])
-                    Console.WriteLine("Функционал: {0}", item.Functional);
+                    Console.WriteLine("Функционал: {0}", item.Functional);  
+#endif
 
                 List<double> reproduction = new(GetReproduction(weights));
                 Fp_best = weights.Min();
 
+#if false
                 Console.WriteLine("Приспособленность:");
                 foreach (var item in reproduction)
                     Console.WriteLine(item);
-                Console.WriteLine("Лучший функционал: {0}", Fp_best);
+                Console.WriteLine("Лучший функционал: {0}", Fp_best);  
+#endif
 
                 Console.ForegroundColor = ConsoleColor.DarkCyan;
                 Console.WriteLine("Лучшая особь: {0}\tФункционал: {1}\n", strongIndividualIndex, strongIndividual);
@@ -153,7 +165,7 @@ namespace GravityExploration
 
                 // Операция кроссинговера для формирования нового поколения
 #if true
-                Console.WriteLine("Кроссинговер");
+                Console.WriteLine("Кроссинговер\n");
                 List<Generation> temp = new(CrossingOver(populationsOfIndividuals[p], in reproduction));
                 List<Generation> newestPopulation = new();
 
@@ -212,6 +224,15 @@ namespace GravityExploration
             // Вывод нужной особи и удаление лишних файлов при выходе из программы
             System.Console.WriteLine("\nИтоговые фигуры");
             OutputGraphs(populationsOfIndividuals.Last().Count - 1);
+        }
+
+        private static double CalculationAvg(List<double> weights)
+        {
+            double res = 0;
+            foreach (var item in weights)
+                res += item;
+            res /= weights.Count;
+            return res;
         }
 
         private static List<Strata> AddStrongIndividual(List<Strata> strongIndividual)

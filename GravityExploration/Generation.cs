@@ -31,7 +31,6 @@ namespace GravityExploration
                             w = 1 / Math.Abs(E_pogr);
                         else
                             w = 1 / Math.Abs(GeneralData.trueReadings[i][j]);
-                        //Console.WriteLine("{0} - {1} = {2}", data[i][j], GeneralData.trueReadings[i][j], data[i][j] - GeneralData.trueReadings[i][j]);
                         Functional += Math.Pow(w * (data[i][j] - GeneralData.trueReadings[i][j]), 2);
                     }
                 }
