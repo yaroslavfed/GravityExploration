@@ -47,6 +47,22 @@ namespace GravityExploration
             forward.Decision();
             GeneralData.trueReadings = _experimentalGeneration.data;
 
+            // Запись экспериментальных данных в файл
+            string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "experimental.txt");
+            using (StreamWriter sw = new(outputPath, false))
+            {
+                sw.WriteLine(GeneralData.trueReadings.Count);
+
+                foreach (var z in GeneralData.trueReadings)
+                {
+                    foreach (var _z in z)
+                    {
+                        sw.Write(_z + " ");
+                    }
+                    sw.WriteLine();
+                }
+            }
+
             Console.WriteLine("Экспериментальные данные");
             OutputGraphs(1);
 

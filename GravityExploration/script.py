@@ -7,6 +7,12 @@ import matplotlib.pyplot as plt
 
 units = []
 res_arr = []
+res_exp = []
+
+with open("experimental.txt", "r") as f:
+    enums = f.readline()[:-1]
+    for i in range(int(enums)):
+        res_exp.append([float(j) for j in f.readline()[:-2].replace(',','.').split(' ')])
 
 with open("output.txt", "r") as f:
     number = f.readline()[:-1]
@@ -49,7 +55,7 @@ for i in range(int(nums)):
         Z[i,:] = np.dot(points[i,:], 1)
 
     # plot vertices
-    ax1.scatter(Z[:, 0], Z[:, 1], Z[:, 2])
+    ax1.scatter(Z[:, 0], Z[:, 1], Z[:, 2], c='k', s = 1)
 
     # list of sides' polygons of figure
     verts = [[Z[0],Z[1],Z[2],Z[3]],
@@ -86,7 +92,13 @@ y_index = 0
 ax3 = fig.add_subplot(233)
 fig.colorbar(surf, ax=ax3)
 
-l, = ax3.plot(xf, zgrid[y_index], lw=2)
+if number == "-1":
+    l, = ax3.plot(xf, zgrid[y_index], lw=2)
+else:
+    l, = ax3.plot(xf, zgrid[y_index], lw=2, label='received')
+egrid = np.array(res_exp)
+e, = ax3.plot(xf, egrid[y_index], lw=2, color='r', label='experimental')
+ax3.legend()
 ax3.set_title(ygrid[y_index][0])
 
 class Index:
@@ -97,6 +109,8 @@ class Index:
         i = self.ind % len(zgrid)
         ydata = zgrid[i]
         l.set_ydata(ydata)
+        edata = egrid[i]
+        e.set_ydata(edata)
         down_grahp(xgrid[0][i])
         ax3.set_title(ygrid[i][0])
         plt.draw()
@@ -106,6 +120,8 @@ class Index:
         i = self.ind % len(zgrid)
         ydata = zgrid[i]
         l.set_ydata(ydata)
+        edata = egrid[i]
+        e.set_ydata(edata)
         down_grahp(xgrid[0][i])
         ax3.set_title(ygrid[i][0])
         plt.draw()
