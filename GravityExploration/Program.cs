@@ -11,6 +11,7 @@ namespace GravityExploration
     {
         static void Main(string[] args)
         {
+            #region InputData
             // Входные данные
             int objectsNums;                                    // Количество объектов у особи
             int individualsNums = 5;                            // Количество особей
@@ -20,10 +21,11 @@ namespace GravityExploration
             // Условия для обратной задачи
             double mutationPercent = 0.07;                      // Процент мутации
             double Eps = 0.1;                                  // Точность
-            int MaxP = 1000;                                    // Максимальное количество итераций
+            int MaxP = 1000;                                    // Максимальное количество итераций 
+            #endregion
+
             double Fp_best = 1;                                 // Лучшее значение
             int p;                                              // Итерация (номер поколения)
-
             List<string[]> _units;                              // Задание параметров для объектов особи
 
             #region Receivers
