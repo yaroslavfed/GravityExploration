@@ -13,17 +13,18 @@ namespace GravityExploration
         {
             #region InputData
             // Входные данные
-            int objectsNums;                                    // Количество объектов у особи
+            int objectsMax = 5;                                 // Максимальное количество объектов у особи
             int individualsNums = 5;                            // Количество особей
             double xs = -5, xe = 5;                             // Границы сетки по OX
             double ys = -5, ye = 5;                             // Границы сетки по OY
 
             // Условия для обратной задачи
             double mutationPercent = 0.07;                      // Процент мутации
-            double Eps = 0.1;                                  // Точность
+            double Eps = 0.1;                                   // Искомая точность
             int MaxP = 1000;                                    // Максимальное количество итераций 
             #endregion
 
+            int objectsNums;                                    // Количество объектов у особи
             double Fp_best = 1;                                 // Лучшее значение
             int p;                                              // Итерация (номер поколения)
             List<string[]> _units;                              // Задание параметров для объектов особи
@@ -85,7 +86,7 @@ namespace GravityExploration
             for (int i = 0; i < individualsNums; i++)
             {
                 Random rdCount = new();
-                objectsNums = rdCount.Next(1, 5);
+                objectsNums = rdCount.Next(1, objectsMax + 1);
                 _units = SetPrimaryGeneration(objectsNums, xs, xe, ys, ye);
                 Generation _generation = new(AddGeneration(_units));
                 tempPopulation.Add(_generation);
