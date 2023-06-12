@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.Intrinsics.Arm;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -188,7 +189,7 @@ namespace GravityExploration
                 newestPopulation.Add(tempListStrata);
 
                 // Остановка для просмотра промежуточных особей
-#if true
+#if false
                 Thread.Sleep(1000);
                 string? test = Console.ReadLine();
                 if (test == "test")
@@ -278,10 +279,6 @@ namespace GravityExploration
                 double mutation = rdMutation.NextDouble();
                 if (mutation <= mutationPercent)
                 {
-                    Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.WriteLine("Мутация: особь {0}", i);
-                    Console.ResetColor();
-
                     int count = rdIndexObjCount.Next(1, generation[i].individual.Count + 1);
                     for (int j = 0; j < count; j++)
                     {
@@ -290,28 +287,32 @@ namespace GravityExploration
                         double param;
                         if (index < 2 && index >= 0)
                         {
+                            ConsoleOutput(i ,j, index);
                             param = RandomDoubleInRange(xs, ye);
                             generation[i].individual[j].Params[index] = param;
                         }
                         else if (index < 5 && index > 2)
                         {
+                            ConsoleOutput(i, j, index);
                             param = rdIndex.NextDouble() * Math.Abs(xs);
                             generation[i].individual[j].Params[index] = param;
                         }
                         else if (index == 6)
                         {
+                            ConsoleOutput(i, j, index);
                             param = 3000;
                             generation[i].individual[j].Params[index] = param;
-                        }
-                        else
-                        {
-                            Console.ForegroundColor = ConsoleColor.DarkMagenta;
-                            Console.WriteLine("Мутация не удалась");
-                            Console.ResetColor();
                         }
                         generation[i].individual[j].GetFromList();
                     }
                 }
+            }
+
+            static void ConsoleOutput(int i, int j, int index)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine("Мутация: особь {0} объект {1} параметр {2}", i, j, index);
+                Console.ResetColor();
             }
         }
 
@@ -449,6 +450,7 @@ namespace GravityExploration
         private static List<Generation> CrossingOver(List<Generation> individuals, in List<double> reproduction)
         {
             List<Generation> generation = new(individuals);
+            int paramsTotalCount = 7;
 
             Random rdIndCount = new();                  // Рандом для получения количества особей для замен
             int indCount = rdIndCount.Next(1, generation.Count + 1);
@@ -477,7 +479,7 @@ namespace GravityExploration
                     //System.Console.WriteLine("\tОбъект: {0} <-> {1}", _obj1, _obj2);
 
                     Random rdParamsCount = new();       // Рандом для получения количества параметров объекта для замены
-                    int paramsCount = rdParamsCount.Next(1, generation[0].individual[0].Params!.Count + 1);
+                    int paramsCount = rdParamsCount.Next(1, paramsTotalCount + 1);
 
                     List<int> randomIndexes = new();
                     bool indexesRepeat;
@@ -486,7 +488,7 @@ namespace GravityExploration
                         int _indexParam;
                         do
                         {
-                            _indexParam = rdParamsCount.Next(generation[0].individual[0].Params!.Count);
+                            _indexParam = rdParamsCount.Next(paramsTotalCount);
                             if (!randomIndexes.Contains(_indexParam))
                             {
                                 indexesRepeat = false;
