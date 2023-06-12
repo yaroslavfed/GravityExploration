@@ -30,7 +30,11 @@ xf=list(map(float, xf.split(' ')))
 yf=list(map(float, yf.split(' ')))
 
 fig = plt.figure(figsize=(11, 9))
-fig.suptitle('Graph ' + number)
+if number == '-1':
+    fig.suptitle('Experimental data')
+else:
+    fig.suptitle('Individual ' + number)
+
 fig.subplots_adjust(top=0.9, bottom=0.05)
 
 # plot "Underground"
