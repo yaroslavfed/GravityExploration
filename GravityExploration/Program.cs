@@ -286,7 +286,7 @@ namespace GravityExploration
                     for (int j = 0; j < count; j++)
                     {
                         generation[i].individual[j].SetToList();
-                        int index = rdIndex.Next(0, 6);
+                        int index = rdIndex.Next(generation[i].individual[j].Params!.Count + 1);
                         double param;
                         if (index < 2 && index >= 0)
                         {
@@ -298,13 +298,17 @@ namespace GravityExploration
                             param = rdIndex.NextDouble() * Math.Abs(xs);
                             generation[i].individual[j].Params[index] = param;
                         }
+                        else if (index == 6)
+                        {
+                            param = 3000;
+                            generation[i].individual[j].Params[index] = param;
+                        }
                         else
                         {
                             Console.ForegroundColor = ConsoleColor.DarkMagenta;
                             Console.WriteLine("Мутация не удалась");
                             Console.ResetColor();
                         }
-                            
                         generation[i].individual[j].GetFromList();
                     }
                 }
@@ -613,8 +617,8 @@ namespace GravityExploration
                     }
                 }
                 Random rd = new();
-                //arr[arr.Length - 1] = Convert.ToString(rd.Next(2500, 3500));
-                arr[arr.Length - 1] = "3000";
+                arr[arr.Length - 1] = Convert.ToString(rd.Next(2500, 3500));
+                //arr[arr.Length - 1] = "3000";
                 primaryGeneration.Add(arr);
             }
 
